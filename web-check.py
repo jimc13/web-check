@@ -1,29 +1,86 @@
-#!/usr/bin/python3
+# How do I give a relative path to the virtual enviroment
 import argparse
-import sqlite3
 import requests
+import sqlalchemy
+from sqlalchemy import create_engine, Column, Integer, String
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import sessionmaker
+
+engine = create_engine('sqlite:///checks.db', echo=True)
+Base = declarative_base()
+class MD5Check(Base):
+    __tablename__ = 'md5s'
+    id = Column(Integer, primary_key=True)
+    url = Column(String)
+    current_hash = Column(String)
+    old_hash = Column(String)
+    failed_connections = Column(Integer)
+    max_failed_connections = Column(Integer)
+    check_frequency = Column(Integer)
+    def __repr__(self):
+        return "<url(url={}, current_hash={}, old_hash={}, failed_connections=\
+                {}, max_failed_connections={}, check_frequency={})>".format(
+                            self.url, self.current_hash, self.old_hash,
+                            self.failed_connections,
+                            self.max_failed_connections,
+                            self.check_frequency)
+
+class StringCheck(Base):
+    __tablename__ = 'strings'
+    id = Column(Integer, primary_key=True)
+    url = Column(String)
+    string_to_match = Column(String)
+    should_exist = Column(Integer)
+    failed_connections = Column(Integer)
+    max_failed_connections = Column(Integer)
+    check_frequency = Column(Integer)
+    def __repr__(self):
+        return "<url(url={}, string_to_match={}, should_exist={}, failed_connections=\
+                {}, max_failed_connections={}, check_frequency={})>".format(
+                            self.url, self.string_to_match, self.should_exist,
+                            self.failed_connections,
+                            self.max_failed_connections,
+                            self.check_frequency)
+
+class DiffCheck(Base):
+    __tablename__ = 'diffs'
+    id = Column(Integer, primary_key=True)
+    url = Column(String)
+    current_content = Column(String)
+    failed_connections = Column(Integer)
+    max_failed_connections = Column(Integer)
+    check_frequency = Column(Integer)
+    def __repr__(self):
+        return "<url(url={}, current_content={}, failed_connections=\
+                {}, max_failed_connections={}, check_frequency={})>".format(
+                            self.url, self.string_to_match,
+                            self.failed_connections,
+                            self.max_failed_connections,
+                            self.check_frequency)
+MD5Check.__table__
+Table('users', MetaData(bind=None),
+            Column('id', Integer(), table=<users>, primary_key=True, nullable=False),
+            Column('name', String(), table=<users>),
+            Column('fullname', String(), table=<users>),
+            Column('password', String(), table=<users>), schema=None)
+
+Session = sessionmaker(bind=engine)
+session = Session()
+check = MD5Check(url='https://google.com', max_failed_connections='24', check_frequency='60')
+session.add(check)
+print(check.url)
+print(check.failed_connections)
+session.commit()
+
+
 
 # check will be run from a cron so should warn/log on errors depending on serverity, the rest of the functions should just error out and give the user an explanation
 def check(database):
     """Perform hash, string and difference checks for all stored url's"""
-    return(database)
-    c.execute('UPDATE hashes SET failed_connections = failed_connections+1 WHERE url = ?', (url))
+    return database
 
 def md5(url, error_warn, frequency, database):
     """Add a database entry for a url to monitor the md5 hash of"""
-    conn = sqlite3.connect(database)
-    c = conn.cursor()
-    try:
-        c.execute('CREATE TABLE IF NOT EXISTS hashes (url TEXT, current_hash TEXT, previous_hash TEXT, failed_connections INTEGER, max_failed_connections INTEGER, check_frequency, INTEGER, CONSTRAINT unique_name UNIQUE (url))')
-    except sqlite3.DatabaseError:
-        print('Error connecting to database\nAre you sure the file is in the correct format')
-
-    try:
-        c.execute('INSERT INTO hashes (url, max_failed_connections, check_frequency) VALUES (?, ?, ?)',  (url, error_warn, frequency))
-    except sqlite3.IntegrityError:
-        print('Url\'s must be unique, either modify or delete your current check')
-        raise
-
     try:
         url_content = requests.get(url)
     except requests.exceptions.ConnectionError:
@@ -32,48 +89,19 @@ def md5(url, error_warn, frequency, database):
     if url_content.status_code != 200:
         print('{} code from server'.format(url_content.status_code))
         exit(1)
-    md5 = "hsgfh"
-    last_md5 = "fwoi"
-    t = (url, md5, last_md5, error_warn, frequency, database)
-    c.execute('UPDATE hashes SET current_hash = ?, previous_hash = ? WHERE url = ?', (md5, last_md5, url))
-    conn.commit()
-
-    return('')
+    return ''
 
 def string(url, string, error_warn, frequency, database):
     """Add a database entry for a url to monitor for a string"""
-    return(url, string, error_warn, frequency, database)
+    return (url, string, error_warn, frequency, database)
 
 def diff(url, error_warn, frequency, database):
     """Add a database entry for a url to monitor for any changes"""
-    return(url, string, error_warn, frequency, database)
+    return (url, string, error_warn, frequency, database)
 
 def list_checks(database, verbose=False):
     # not sure if I want this printing out or passing lists or json back as a return
-    conn = sqlite3.connect(database)
-    c = conn.cursor()
-    for table in ("hashes", "strings", "diffs"):
-        print('The {} table has the following entries:'.format(table))
-        try:
-            # couldn't get ? working to insert the table
-            c.execute('SELECT * FROM {}'.format(table))
-        except sqlite3.OperationalError:
-            print('()')
-            continue
-        check = c.fetchone()
-        if verbose:
-            while check:
-                if table == "hashes":
-                    print('URL: "{0}"\nIs stored with hash: {1}\nAnd previous hash: {2}\nYou will be alerted after {4} failed connections in a row of which there are currently {3}\nThe check is run every {5} seconds\n'.format(check[0], check[1], check[2], check[3], check[4], check[5]))
-                else:
-                    print('NEEDS DOING')
-                check = c.fetchone()
-        else:
-            while check:
-                print(check)
-                check = c.fetchone()
-
-    return('')
+    return ''
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
