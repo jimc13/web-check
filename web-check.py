@@ -23,6 +23,9 @@ def md5(url, error_warn, frequency):
     if url_content.status_code != 200:
         return '{} code from server'.format(url_content.status_code)
 
+    print(url_content.content)
+
+
     Session = sessionmaker(bind=engine)
     session = Session()
     check = MD5Check(url=url, max_failed_connections=error_warn, check_frequency=frequency)
