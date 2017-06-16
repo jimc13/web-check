@@ -12,7 +12,11 @@ def check():
     return database
 
 def md5(url, error_warn, frequency):
+<<<<<<< HEAD
     '''Add a database entry for a url to monitor the md5 hash of.  Returns message relating to success (I've realised this is going to give incorrect error codes).'''
+=======
+    '''Add a database entry for a url to monitor the md5 hash of.  Returns message relating to success (I've realised this is going to hide give incorrect error codes).'''
+>>>>>>> d963334185aca19f6d8e52498a294ec02dedf3a5
     try:
         url_content = requests.get(url)
     except requests.exceptions.ConnectionError:
@@ -22,10 +26,14 @@ def md5(url, error_warn, frequency):
 
     if url_content.status_code != 200:
         return '{} code from server'.format(url_content.status_code)
+<<<<<<< HEAD
 
     print(url_content.content)
 
 
+=======
+
+>>>>>>> d963334185aca19f6d8e52498a294ec02dedf3a5
     Session = sessionmaker(bind=engine)
     session = Session()
     check = MD5Check(url=url, max_failed_connections=error_warn, check_frequency=frequency)
