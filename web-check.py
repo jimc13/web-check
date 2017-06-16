@@ -25,7 +25,6 @@ def md5(url, error_warn, frequency):
 
     print(url_content.content)
 
-
     Session = sessionmaker(bind=engine)
     session = Session()
     check = MD5Check(url=url, max_failed_connections=error_warn, check_frequency=frequency)
