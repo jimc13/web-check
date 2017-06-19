@@ -1,17 +1,39 @@
 # How do I give a relative path to the virtual enviroment
 import argparse
 import requests
+import html2text
 import hashlib
 import sqlalchemy
 from sqlalchemy import create_engine, Column, Integer, String, Table, MetaData
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 
-# check will be run from a cron so should warn/log on errors depending on serverity, the rest of the functions should just error out and give the user an explanation
-def check():
-    '''Perform hash, string and difference checks for all stored url's'''
-# The frequency field is currently being ignored whilst I get everything else working
+def get_md5(html):
+    """
+    Input html bytes.  Returns markdown without links
 
+    requests.get().text will be used as the input data
+    html2text will be used to remove most of the changing parts of the response
+    links will be ignored since most large sites have dynamic links
+    if you want to closely monitor a basic site it is probably better to hash
+    requests.get().content and not bother stripping the html
+    """
+    h = html2text.HTML2Text()
+    h.ignore_links = True
+    text = h.handle(html)
+    #print(text)
+    return hashlib.md5(text.encode('utf-8')).hexdigest()
+
+def failed_connection(check, session):
+    check.failed_connections = check.failed_connections + 1
+    if check.failed_connections == check.max_failed_connections:
+        print('{} failed connections to {} limmit was set at {}'.format(check.failed_connections, check.url, check.max_failed_connections))
+    session.commit()
+
+# check will be run from a cron so should warn/log on errors depending on serverity, the rest of the functions should just error out and give the user an explanation
+def run_checks():
+    '''Perform hash, string and difference checks for all stored url's'''
+    # The frequency field is currently being ignored whilst I get everything else working
     Session = sessionmaker(bind=engine)
     session = Session()
     for check in session.query(MD5Check).order_by(MD5Check.id):
@@ -20,30 +42,37 @@ def check():
             url_content = requests.get(check.url)
         except requests.exceptions.ConnectionError:
             # According to the internet this generates the correct SQL and prevents race conditions caused by +=
-            check.failed_connections = check.failed_connections + 1
-            session.commit()
+            failed_connection(check, session)
             continue
 
         if url_content.status_code != 200:
-            check.failed_connections = check.failed_connections + 1
-            session.commit()
+            failed_connection(check, session)
             continue
 
-        #print(url_content.content)
-
-        new_hash = hashlib.md5(url_content.content).hexdigest()
+        new_hash = get_md5(url_content.text)
         if new_hash == check.current_hash:
+            if check.failed_connections:
+                print('Re-established connection to {} after {} failed connections, it\'s hash was unchanged.'.format(check.url, check.failed_connections))
+
             check.failed_connections = 0
             session.commit()
             continue
 
         if new_hash == check.old_hash:
-            print('Changes to {} were reverted'.format(check.url))
+            if check.failed_connections:
+                print('Re-established connection to {} after {} failed connections, it\'s hash was reverted.'.format(check.url, check.failed_connections))
+            else:
+                print('The md5 for {} has been reverted'.format(check.url))
+
             check.failed_connections = 0
         else:
             #print(new_hash)
             #print(check.current_hash)
-            print('{} has changed'.format(check.url))
+            if check.failed_connections:
+                print('Re-established connection to {} after {} failed connections, it\'s hash has changed'.format(check.url, check.failed_connections))
+            else:
+                print('The md5 for {} has changed'.format(check.url))
+
             check.failed_connections = 0
 
         check.old_hash = check.current_hash
@@ -64,7 +93,7 @@ def md5(url, error_warn, frequency):
     if url_content.status_code != 200:
         return '{} code from server'.format(url_content.status_code)
 
-    current_hash = hashlib.md5(url_content.content).hexdigest()
+    current_hash = get_md5(url_content.text)
     print(current_hash)
     Session = sessionmaker(bind=engine)
     session = Session()
@@ -198,7 +227,7 @@ if __name__ == '__main__':
     """
 
     if args.check:
-        check()
+        run_checks()
     elif args.add:
         if args.add[0] == 'md5':
             if len(args.add) != 2:
