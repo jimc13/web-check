@@ -11,27 +11,44 @@ from sqlalchemy.orm import sessionmaker
 def check():
     '''Perform hash, string and difference checks for all stored url's'''
 # The frequency field is currently being ignored whilst I get everything else working
+
+    Session = sessionmaker(bind=engine)
+    session = Session()
     for check in session.query(MD5Check).order_by(MD5Check.id):
+        #print(check.url)
         try:
             url_content = requests.get(check.url)
         except requests.exceptions.ConnectionError:
-            check.failed_connections += 1
+            # According to the internet this generates the correct SQL and prevents race conditions caused by +=
+            check.failed_connections = check.failed_connections + 1
+            session.commit()
+            continue
 
         if url_content.status_code != 200:
-            check.failed_connections += 1
+            check.failed_connections = check.failed_connections + 1
+            session.commit()
+            continue
 
-        check.current_hash
+        #print(url_content.content)
+
         new_hash = hashlib.md5(url_content.content).hexdigest()
-        if new_hash == current_hash:
+        if new_hash == check.current_hash:
+            check.failed_connections = 0
+            session.commit()
             continue
 
         if new_hash == check.old_hash:
             print('Changes to {} were reverted'.format(check.url))
+            check.failed_connections = 0
         else:
+            #print(new_hash)
+            #print(check.current_hash)
             print('{} has changed'.format(check.url))
+            check.failed_connections = 0
 
         check.old_hash = check.current_hash
         check.current_hash = new_hash
+        session.commit()
 
     return ''
 
@@ -48,10 +65,10 @@ def md5(url, error_warn, frequency):
         return '{} code from server'.format(url_content.status_code)
 
     current_hash = hashlib.md5(url_content.content).hexdigest()
-
+    print(current_hash)
     Session = sessionmaker(bind=engine)
     session = Session()
-    check = MD5Check(url=url, current_hash=current_hash, max_failed_connections=error_warn, check_frequency=frequency)
+    check = MD5Check(url=url, current_hash=current_hash, failed_connections=0, max_failed_connections=error_warn, check_frequency=frequency)
     session.add(check)
     try:
         session.commit()
@@ -73,15 +90,16 @@ def list_checks(verbose=False):
     session = Session()
     print('MD5 Checks:')
     if verbose:
-        print('|{: ^78}|\n|{: ^39}|{: ^38}|\n|{: ^25}|{: ^26}|{: ^25}|\n|{: ^78}|'.format('URL', 'Current Hash', 'Previous Hash', 'Failed Connections', 'Warn After', 'Delay Between Checks', ''))
+        # I would like to change the formatting of the over to match that of a SELECT * FROM tables
+        print('| {: ^77}|\n|{: ^39}|{: ^38}|\n|{: ^25}|{: ^26}|{: ^25}|\n|{: ^78}|'.format('URL', 'Current Hash', 'Previous Hash', 'Failed Connections', 'Warn After', 'Delay Between Checks', ''))
         for check in session.query(MD5Check).order_by(MD5Check.id):
-            print('|{: ^78}|\n|{: ^39}|{: ^38}|\n|{: ^25}|{: ^26}|{: ^25}|\n|{: ^78}|'.format(str(check.url), str(check.current_hash), str(check.old_hash), str(check.failed_connections), str(check.max_failed_connections), str(check.check_frequency), ''))
+            print('| {: ^77}|\n|{: ^39}|{: ^38}|\n|{: ^25}|{: ^26}|{: ^25}|\n|{: ^78}|'.format(str(check.url), str(check.current_hash), str(check.old_hash), str(check.failed_connections), str(check.max_failed_connections), str(check.check_frequency), ''))
             #print(check.url, check.current_hash, check.old_hash, check.failed_connections, check.max_failed_connections, check.check_frequency)
     else:
-        print('|{: <51}|{: ^8}|{: ^8}|{: ^8}|'.format('URL', 'Failed', 'Warn', 'Delay'))
+        print('| {: <50}|{: ^8}|{: ^8}|{: ^8}|'.format('URL', 'Failed', 'Warn', 'Delay'))
         for check in session.query(MD5Check).order_by(MD5Check.id):
             # '{}'.format(None) is fine BUT '{: ^10}'.format(None) is not, this makes no-sence to me, converting everything to a string is the workarround I have gone for
-            print('|{: <51}|{: ^8}|{: ^8}|{: ^8}|'.format(str(check.url), str(check.failed_connections), str(check.max_failed_connections), str(check.check_frequency)))
+            print('| {: <50}|{: ^8}|{: ^8}|{: ^8}|'.format(str(check.url), str(check.failed_connections), str(check.max_failed_connections), str(check.check_frequency)))
 
     return ''
 
