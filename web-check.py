@@ -256,4 +256,12 @@ if __name__ == '__main__':
     elif args.delete:
         print('delete')
     else:
-        print('There is no interactive mode, choose some command line arguments.')
+        print('''
+-c --check\t\tRun checks against all monitored urls
+-l --list\t\tList stored checks from the database
+-a --add\t\tAdds a check in the database\n\t\t\t\tRequires md5/string/diff url
+--warn-after\t\tNumber of failed network attempts to warn after
+--check-frequency\tSpecify the number of seconds to check after
+--database-location\tSpecify a database name and location
+-v --verbose\t\tEnables verbose mode, currently only used for list
+''')
