@@ -3,6 +3,7 @@ import argparse
 import requests
 import html2text
 import hashlib
+import difflib
 import sqlalchemy
 from sqlalchemy import create_engine, Column, Integer, String, Table, MetaData
 from sqlalchemy.ext.declarative import declarative_base
@@ -105,6 +106,28 @@ def run_checks():
                 check.present = 1
                 session.commit()
 
+    for check in session.query(DiffCheck).order_by(DiffCheck.id):
+        try:
+            url_content = requests.get(check.url)
+        except requests.exceptions.ConnectionError:
+            failed_connection(check, session)
+            continue
+
+        if url_content.status_code != 200:
+            failed_connection(check, session)
+            continue
+
+        check_if_failed(check, session)
+        text = get_text(url_content.text)
+        if text != check.current_content:
+            print('Current:\n', check.current_content)
+            print('New:\n', text)
+            diff = difflib.ndiff(text, check.current_content)
+            print('Diff check for {} has changed:'.format(check.url))
+            print(''.join(diff))
+            DiffCheck.current_content = text
+            session.commit()
+
     return ''
 
 def md5(url, error_warn, frequency):
@@ -135,8 +158,9 @@ def md5(url, error_warn, frequency):
     try:
         session.commit()
     except sqlalchemy.exc.IntegrityError:
-        return 'Already in database'
-    return 'Added MD5 Check for {}'.format(url)
+        return 'An entry for {} is already in database'.format(url)
+    else:
+        return 'Added MD5 Check for {}'.format(url)
 
 def string(url, string, error_warn, frequency):
     '''Add a database entry for a url to monitor for a string'''
@@ -172,11 +196,38 @@ def string(url, string, error_warn, frequency):
     try:
         session.commit()
     except sqlalchemy.exc.IntegrityError:
-        return 'Already in database'
-    return 'Added String Check for {}'.format(url)
+        return 'An entry for {} is already in database'.format(url)
+    else:
+        return 'Added String Check for {}'.format(url)
 
-def diff(url, error_warn, frequence):
-    '''Add a database entry for a url to monitor for any changes'''
+def diff(url, error_warn, frequency):
+    '''Add a database entry for a url to monitor for any text changes'''
+    try:
+        url_content = requests.get(url)
+    except requests.exceptions.ConnectionError:
+        return 'Could not connect to chosen url'
+    except requests.exceptions.MissingSchema as e:
+        return e
+    except requests.exceptions.InvalidSchema as e:
+        return e
+
+    if url_content.status_code != 200:
+        return '{} code from server'.format(url_content.status_code)
+
+    Session = sessionmaker(bind=engine)
+    session = Session()
+    check = DiffCheck(url=url, current_content=get_text(url_content.text),
+                    failed_connections=0, max_failed_connections=error_warn,
+                    check_frequency=frequency)
+    session.add(check)
+    try:
+        session.commit()
+    except sqlalchemy.exc.IntegrityError:
+        return 'An entry for {} is already in database'.format(url)
+    else:
+        return 'Added Diff Check for {}'.format(url)
+
+
     return (url, string, error_warn, frequency, database)
 
 def list_checks(verbose=False):
@@ -228,6 +279,20 @@ def list_checks(verbose=False):
                                         str(check.url),
                                         str(check.string_to_match),
                                         str(check.present),
+                                        str(check.failed_connections),
+                                        str(check.max_failed_connections),
+                                        str(check.check_frequency)))
+
+    print('Diff Checks:')
+    print('| {: <20}|{: ^20}|{: ^8}|{: ^8}|{: ^8}|'.format('URL',
+                            'Content', 'Failed', 'Warn', 'Delay'))
+    for check in session.query(DiffCheck).order_by(DiffCheck.id):
+        # '{}'.format(None) is fine BUT '{: ^10}'.format(None) is not,
+        # this makes no-sence to me, converting everything to a string is
+        # the workarround I have gone for
+        print('| {: <20}|{: ^20}|{: ^8}|{: ^8}|{: ^8}|'.format(
+                                        str(check.url),
+                                        str(check.current_content),
                                         str(check.failed_connections),
                                         str(check.max_failed_connections),
                                         str(check.check_frequency)))
