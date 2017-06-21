@@ -1,4 +1,5 @@
 # How do I give a relative path to the virtual enviroment
+import sys
 import argparse
 import requests
 import html2text
@@ -120,11 +121,16 @@ def run_checks():
         check_if_failed(check, session)
         text = get_text(url_content.text)
         if text != check.current_content:
-            print('Current:\n', check.current_content)
-            print('New:\n', text)
-            diff = difflib.ndiff(text, check.current_content)
-            print('Diff check for {} has changed:'.format(check.url))
-            print(''.join(diff))
+            #print('STORED', check.current_content)
+            #print('NEW', text)
+            # I'm not happy with this as the output format but I'm going to
+            # focus on something else
+            for line in difflib.context_diff(check.current_content.split('\n'),
+                            text.split('\n'),
+                            fromfile='Stored content for {}'.format(check.url),
+                            tofile='New content for {}'.format(check.url)):
+                print(line)
+            #print(check.current_content.split('\n'), text.split('\n'))
             DiffCheck.current_content = text
             session.commit()
 
