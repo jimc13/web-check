@@ -54,8 +54,6 @@ def run_checks():
     '''Perform hash, string and difference checks for all stored url's'''
     # The frequency field is currently being ignored whilst I get everything
     # else working
-    Session = sessionmaker(bind=engine)
-    session = Session()
     for check in session.query(MD5Check).order_by(MD5Check.id):
         try:
             url_content = requests.get(check.url)
@@ -156,8 +154,6 @@ def md5(url, error_warn, frequency):
         return '{} code from server'.format(url_content.status_code)
 
     current_hash = get_md5(url_content.text)
-    Session = sessionmaker(bind=engine)
-    session = Session()
     check = MD5Check(url=url, current_hash=current_hash, failed_connections=0,
                 max_failed_connections=error_warn, check_frequency=frequency)
     session.add(check)
@@ -193,8 +189,6 @@ def string(url, string, error_warn, frequency):
         print('{} is currently not present, will alert if this changes'.format(
                                                                     string))
 
-    Session = sessionmaker(bind=engine)
-    session = Session()
     check = StringCheck(url=url, string_to_match=string, present=string_exists,
                     failed_connections=0, max_failed_connections=error_warn,
                     check_frequency=frequency)
@@ -220,8 +214,6 @@ def diff(url, error_warn, frequency):
     if url_content.status_code != 200:
         return '{} code from server'.format(url_content.status_code)
 
-    Session = sessionmaker(bind=engine)
-    session = Session()
     check = DiffCheck(url=url, current_content=get_text(url_content.text),
                     failed_connections=0, max_failed_connections=error_warn,
                     check_frequency=frequency)
@@ -236,16 +228,147 @@ def diff(url, error_warn, frequency):
 
     return (url, string, error_warn, frequency, database)
 
-def list_checks(verbose=False):
+def get_longest_md5():
+    longest_url = 3
+    longest_current_hash = 12
+    longest_old_hash = 8
+    longest_failed_connections = 18
+    longest_max_failed_connections = 22
+    longest_check_frequency = 15
+    for check in session.query(MD5Check).order_by(MD5Check.id):
+        if len(str(check.url)) > longest_url:
+            longest_url = len(str(check.url))
+        if len(str(check.current_hash)) > longest_current_hash:
+            longest_current_hash = len(str(check.current_hash))
+        if len(str(check.old_hash)) > longest_old_hash:
+            longest_old_hash = len(str(check.old_hash))
+        if len(str(check.failed_connections)) > longest_failed_connections:
+            longest_failed_connections = len(str(check.failed_connections))
+        if len(str(check.max_failed_connections)) > \
+                                longest_max_failed_connections:
+            longest_max_failed_connections =\
+                                    len(str(check.max_failed_connections))
+        if len(str(check.check_frequency)) > longest_check_frequency:
+            longest_check_frequency = len(str(check.check_frequency))
+
+    return ("url", longest_url), ("current_hash", longest_current_hash),\
+        ("old_hash", longest_old_hash), ("failed_connections",
+        longest_failed_connections), ("max_failed_connections",
+        longest_max_failed_connections), ("check_frequency",
+        longest_check_frequency)
+
+def get_longest_string():
+    longest_url = 3
+    longest_string_to_match = 15
+    longest_present = 7
+    longest_failed_connections = 18
+    longest_max_failed_connections = 22
+    longest_check_frequency = 15
+    for check in session.query(StringCheck).order_by(StringCheck.id):
+        if len(str(check.url)) > longest_url:
+            longest_url = len(str(check.url))
+        if len(str(check.string_to_match)) > longest_string_to_match:
+            longest_string_to_match = len(str(check.string_to_match))
+        if len(str(check.present)) > longest_present:
+            longest_present = len(str(check.present))
+        if len(str(check.failed_connections)) > longest_failed_connections:
+            longest_failed_connections = len(str(check.failed_connections))
+        if len(str(check.max_failed_connections)) > \
+                                longest_max_failed_connections:
+            longest_max_failed_connections =\
+                                    len(str(check.max_failed_connections))
+        if len(str(check.check_frequency)) > longest_check_frequency:
+            longest_check_frequency = len(str(check.check_frequency))
+
+    return ("url", longest_url), ("string_to_match", longest_string_to_match),\
+        ("present", longest_present), ("failed_connections",
+        longest_failed_connections), ("max_failed_connections",
+        longest_max_failed_connections), ("check_frequency",
+        longest_check_frequency)
+
+def get_longest_diff():
+    longest_url = 3
+    longest_current_content = 15
+    longest_failed_connections = 18
+    longest_max_failed_connections = 22
+    longest_check_frequency = 15
+    for check in session.query(DiffCheck).order_by(DiffCheck.id):
+        if len(str(check.url)) > longest_url:
+            longest_url = len(str(check.url))
+        if len(str(check.current_content)) > longest_current_content:
+            longest_current_content = len(str(check.current_content))
+        if len(str(check.failed_connections)) > longest_failed_connections:
+            longest_failed_connections = len(str(check.failed_connections))
+        if len(str(check.max_failed_connections)) > \
+                                longest_max_failed_connections:
+            longest_max_failed_connections =\
+                                    len(str(check.max_failed_connections))
+        if len(str(check.check_frequency)) > longest_check_frequency:
+            longest_check_frequency = len(str(check.check_frequency))
+
+    return ("url", longest_url), ("current_content", longest_current_content),\
+        ("failed_connections", longest_failed_connections),\
+        ("max_failed_connections", longest_max_failed_connections),\
+        ("check_frequency", longest_check_frequency)
+
+def list_checks():
     """
     The format needs a full review
     I intend to scrap verbose mode and just print the entire table in the
     same format as SELECT * FROM table would do
     """
-    # not sure if I want this printing out or passing lists or json back as a
-    # return
-    Session = sessionmaker(bind=engine)
-    session = Session()
+    table_skel = '|'
+    columns = []
+    arguments = []
+    for column, longest_entry in get_longest_md5():
+        table_skel += (' {{: <{}}} |'.format(longest_entry))
+        columns.append(column)
+        arguments.append('row.{}'.format(column))
+
+    print('{} Checks:'.format('MD5Check'))
+    print(table_skel.format(*columns))
+    for check in session.query(MD5Check).order_by(MD5Check.id):
+        print(table_skel.format(str(check.url), str(check.current_hash),
+            str(check.old_hash), str(check.failed_connections),
+            str(check.max_failed_connections), str(check.check_frequency)))
+
+    table_skel = '|'
+    columns = []
+    arguments = []
+    for column, longest_entry in get_longest_string():
+        table_skel += (' {{: <{}}} |'.format(longest_entry))
+        columns.append(column)
+        arguments.append('row.{}'.format(column))
+
+    print('{} Checks:'.format('StringCheck'))
+    print(table_skel.format(*columns))
+    for check in session.query(StringCheck).order_by(StringCheck.id):
+        print(table_skel.format(str(check.url),
+                        str(check.string_to_match),
+                        str(check.present),
+                        str(check.failed_connections),
+                        str(check.max_failed_connections),
+                        str(check.check_frequency)))
+
+    table_skel = '|'
+    columns = []
+    arguments = []
+    for column, longest_entry in get_longest_diff():
+        table_skel += (' {{: <{}}} |'.format(longest_entry))
+        columns.append(column)
+        arguments.append('row.{}'.format(column))
+
+    print('{} Checks:'.format('DiffCheck'))
+    print(table_skel.format(*columns))
+    for check in session.query(DiffCheck).order_by(DiffCheck.id):
+        # I couldn't work out how to implement class.variable so had to
+        # write this out 3 times despite being close to having it as a function
+        print(table_skel.format(str(check.url),
+                            str(check.current_content),
+                            str(check.failed_connections),
+                            str(check.max_failed_connections),
+                            str(check.check_frequency)))
+    """
     print('MD5 Checks:')
     if verbose:
         # I would like to change the formatting of the over to match that of
@@ -302,7 +425,7 @@ def list_checks(verbose=False):
                                         str(check.failed_connections),
                                         str(check.max_failed_connections),
                                         str(check.check_frequency)))
-
+    """
     return ''
 
 if __name__ == '__main__':
@@ -321,8 +444,6 @@ if __name__ == '__main__':
         help='Specify the number of seconds to check after')
     parser.add_argument('--database-location', default='checks.db',
         help='Specify a database name and location')
-    parser.add_argument('-v', '--verbose', action='store_true',
-        help='Enables verbose mode')
     args = parser.parse_args()
 
     engine = create_engine('sqlite:///{}'.format(args.database_location))
@@ -409,10 +530,10 @@ failed_connections={}, max_failed_connections={}, check_frequency={})>'.format(
             Column('check_frequency', Integer()),   schema=None)
 
     metadata.create_all(engine)
-
-    """
     Session = sessionmaker(bind=engine)
     session = Session()
+
+    """
     check = MD5Check(url='https://google.com', max_failed_connections='24',
                 check_frequency='60')
     session.add(check)
@@ -454,7 +575,7 @@ failed_connections={}, max_failed_connections={}, check_frequency={})>'.format(
         else:
             print('Choose either md5, string or diff.')
     elif args.list:
-        list_checks(args.verbose)
+        list_checks()
     elif args.delete:
         print('delete')
     else:
@@ -465,5 +586,4 @@ failed_connections={}, max_failed_connections={}, check_frequency={})>'.format(
 --warn-after\t\tNumber of failed network attempts to warn after
 --check-frequency\tSpecify the number of seconds to check after
 --database-location\tSpecify a database name and location
--v --verbose\t\tEnables verbose mode, currently only used for list
 ''')
