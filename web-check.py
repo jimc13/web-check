@@ -1,4 +1,4 @@
-# How do I give a relative path to the virtual enviroment
+#!/usr/bin/env python
 import sys
 import argparse
 import requests
@@ -25,6 +25,9 @@ def get_text(html):
     return h.handle(html)
 
 def get_md5(html):
+    """
+    Input html bytes. Returns MD5 hash.
+    """
     return hashlib.md5(get_text(html).encode('utf-8')).hexdigest()
 
 def failed_connection(check, session):
@@ -66,7 +69,11 @@ def run_checks():
             continue
 
         check_if_failed(check, session)
-        new_hash = get_md5(url_content.text)
+        try:
+            new_hash = get_md5(url_content.text)
+        except:
+            print('Failed to hash response from {}'.format(check.url))
+            continue
         if new_hash == check.current_hash:
             continue
 
@@ -119,8 +126,6 @@ def run_checks():
         check_if_failed(check, session)
         text = get_text(url_content.text)
         if text != check.current_content:
-            #print('STORED', check.current_content)
-            #print('NEW', text)
             # I'm not happy with this as the output format but I'm going to
             # focus on something else
             for line in difflib.context_diff(check.current_content.split('\n'),
@@ -128,7 +133,6 @@ def run_checks():
                             fromfile='Stored content for {}'.format(check.url),
                             tofile='New content for {}'.format(check.url)):
                 print(line)
-            #print(check.current_content.split('\n'), text.split('\n'))
             DiffCheck.current_content = text
             session.commit()
 
@@ -153,7 +157,10 @@ def md5(url, error_warn, frequency):
     if url_content.status_code != 200:
         return '{} code from server'.format(url_content.status_code)
 
-    current_hash = get_md5(url_content.text)
+    try:
+        current_hash = get_md5(url_content.text)
+    except:
+        return 'Failed to hash response from {}'.format(url)
     check = MD5Check(url=url, current_hash=current_hash, failed_connections=0,
                 max_failed_connections=error_warn, check_frequency=frequency)
     session.add(check)
@@ -367,64 +374,7 @@ def list_checks():
                             str(check.failed_connections),
                             str(check.max_failed_connections),
                             str(check.check_frequency)))
-    """
-    print('MD5 Checks:')
-    if verbose:
-        # I would like to change the formatting of the over to match that of
-        # SELECT * FROM tables
-        print('| {: ^77}|\n|{: ^39}|{: ^38}|\n|{: ^25}|{: ^26}|{: ^25}|\n\
-|{: ^78}|'.format('URL', 'Current Hash', 'Previous Hash', 'Failed Connections',
-            'Warn After', 'Delay Between Checks', ''))
-        for check in session.query(MD5Check).order_by(MD5Check.id):
-            print('| {: ^77}|\n|{: ^39}|{: ^38}|\n|{: ^25}|{: ^26}|{: ^25}|\n\
-|{: ^78}|'.format(str(check.url), str(check.current_hash), str(check.old_hash),
-            str(check.failed_connections), str(check.max_failed_connections),
-            str(check.check_frequency), ''))
-            #print(check.url, check.current_hash, check.old_hash,
-            # check.failed_connections, check.max_failed_connections,
-            # check.check_frequency)
-    else:
-        print('| {: <50}|{: ^8}|{: ^8}|{: ^8}|'.format('URL', 'Failed', 'Warn',
-                                                    'Delay'))
-        for check in session.query(MD5Check).order_by(MD5Check.id):
-            # '{}'.format(None) is fine BUT '{: ^10}'.format(None) is not,
-            # this makes no-sence to me, converting everything to a string is
-            # the workarround I have gone for
-            print('| {: <50}|{: ^8}|{: ^8}|{: ^8}|'.format(
-                                            str(check.url),
-                                            str(check.failed_connections),
-                                            str(check.max_failed_connections),
-                                            str(check.check_frequency)))
 
-    print('String Checks:')
-    print('| {: <32}|{: ^8}|{: ^8}|{: ^8}|{: ^8}|{: ^8}|'.format('URL',
-                            'String', 'Present', 'Failed', 'Warn', 'Delay'))
-    for check in session.query(StringCheck).order_by(StringCheck.id):
-        # '{}'.format(None) is fine BUT '{: ^10}'.format(None) is not,
-        # this makes no-sence to me, converting everything to a string is
-        # the workarround I have gone for
-        print('| {: <32}|{: ^8}|{: ^8}|{: ^8}|{: ^8}|{: ^8}|'.format(
-                                        str(check.url),
-                                        str(check.string_to_match),
-                                        str(check.present),
-                                        str(check.failed_connections),
-                                        str(check.max_failed_connections),
-                                        str(check.check_frequency)))
-
-    print('Diff Checks:')
-    print('| {: <20}|{: ^20}|{: ^8}|{: ^8}|{: ^8}|'.format('URL',
-                            'Content', 'Failed', 'Warn', 'Delay'))
-    for check in session.query(DiffCheck).order_by(DiffCheck.id):
-        # '{}'.format(None) is fine BUT '{: ^10}'.format(None) is not,
-        # this makes no-sence to me, converting everything to a string is
-        # the workarround I have gone for
-        print('| {: <20}|{: ^20}|{: ^8}|{: ^8}|{: ^8}|'.format(
-                                        str(check.url),
-                                        str(check.current_content),
-                                        str(check.failed_connections),
-                                        str(check.max_failed_connections),
-                                        str(check.check_frequency)))
-    """
     return ''
 
 if __name__ == '__main__':
@@ -532,57 +482,40 @@ failed_connections={}, max_failed_connections={}, check_frequency={})>'.format(
     Session = sessionmaker(bind=engine)
     session = Session()
 
-    """
-    check = MD5Check(url='https://google.com', max_failed_connections='24',
-                check_frequency='60')
-    session.add(check)
-    try:
-        session.commit()
-    except:
-        print('Already in database')
-
-    #print(MD5Check.__table__.constraints)
-    #a = session.query(MD5Check)
-    #print('\n',a.all(),'\n')
-    #print('\n',a.one().url,'\n')
-    """
-
     if args.check:
         run_checks()
+    elif args.list:
+        list_checks()
     elif args.add:
         if args.add[0] == 'md5':
             if len(args.add) != 2:
-                print('call as -a md5 url-to-check')
+                print('call as -a md5 \'url-to-check\'')
                 exit(1)
             try:
                 print(md5(args.add[1], args.warn_after, args.check_frequency))
             except:
                 print('Exiting due to md5 error')
                 raise
-                #exit(1)
         elif args.add[0] == 'string':
             if len(args.add) != 3:
-                print('call as -a string string-to-check url-to-check')
+                print('call as -a string string-to-check \'url-to-check\'')
                 exit(1)
             print(string(args.add[2], args.add[1], args.warn_after,
                 args.check_frequency))
         elif args.add[0] == 'diff':
             if len(args.add) != 2:
-                print('call as -a diff url-to-check')
+                print('call as -a diff \'url-to-check\'')
                 exit(1)
             print(diff(args.add[1], args.warn_after, args.check_frequency))
         else:
             print('Choose either md5, string or diff.')
-    elif args.list:
-        list_checks()
     elif args.delete:
         print('delete')
     else:
-        print('''
+        print('''Usage:
 -c --check\t\tRun checks against all monitored urls
 -l --list\t\tList stored checks from the database
 -a --add\t\tAdds a check in the database\n\t\t\t\tRequires md5/string/diff url
 --warn-after\t\tNumber of failed network attempts to warn after
 --check-frequency\tSpecify the number of seconds to check after
---database-location\tSpecify a database name and location
-''')
+--database-location\tSpecify a database name and location''')
