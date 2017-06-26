@@ -133,6 +133,11 @@ def run_checks():
                             fromfile='Stored content for {}'.format(check.url),
                             tofile='New content for {}'.format(check.url)):
                 print(line)
+            # It could be better to just print markdown of the before and after
+            """
+            print('{0} has changed\nNew content for {0}:\n{1}\nOld content for\
+{0}:\n{2}'.format(check.url, text, check.current_content))
+            """
             DiffCheck.current_content = text
             session.commit()
 
@@ -513,9 +518,9 @@ failed_connections={}, max_failed_connections={}, check_frequency={})>'.format(
         print('delete')
     else:
         print('''Usage:
--c --check\t\tRun checks against all monitored urls
--l --list\t\tList stored checks from the database
--a --add\t\tAdds a check in the database\n\t\t\t\tRequires md5/string/diff url
---warn-after\t\tNumber of failed network attempts to warn after
---check-frequency\tSpecify the number of seconds to check after
---database-location\tSpecify a database name and location''')
+    -c --check\t\tRun checks against all monitored urls
+    -l --list\t\tList stored checks from the database
+    -a --add\t\tAdds a check in the database\n\t\t\t\tRequires md5/string/diff url
+    --warn-after\t\tNumber of failed network attempts to warn after
+    --check-frequency\tSpecify the number of seconds to check after
+    --database-location\tSpecify a database name and location''')
