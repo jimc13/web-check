@@ -1,14 +1,20 @@
 #!/usr/bin/env python
-import sys
-import argparse
-import requests
-import html2text
-import hashlib
-import difflib
-import sqlalchemy
-from sqlalchemy import create_engine, Column, Integer, String, Table, MetaData
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker
+try:
+    import sys
+    import argparse
+    import requests
+    import html2text
+    import hashlib
+    import difflib
+    import sqlalchemy
+    from sqlalchemy import create_engine, Column, Integer, String, Table, MetaData
+    from sqlalchemy.ext.declarative import declarative_base
+    from sqlalchemy.orm import sessionmaker
+except ImportError:
+    print("""Import failed make sure you have set up the virtual enviroment.
+python3 -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt""")
 
 def get_text(html):
     """
@@ -54,7 +60,7 @@ connections'.format(check.url, check.failed_connections))
 # serverity, the rest of the functions should just error out and give the user
 # an explanation
 def run_checks():
-    '''Perform hash, string and difference checks for all stored url's'''
+    """Perform hash, string and difference checks for all stored url's"""
     # The frequency field is currently being ignored whilst I get everything
     # else working
     for check in session.query(MD5Check).order_by(MD5Check.id):
@@ -144,12 +150,12 @@ def run_checks():
     return ''
 
 def md5(url, error_warn, frequency):
-    '''
+    """
     Add a database entry for a url to monitor the md5 hash of.  Returns message
     relating to success
 
     (I've realised this is going to give incorrect error codes).
-    '''
+    """
     try:
         url_content = requests.get(url)
     except requests.exceptions.ConnectionError:
@@ -177,7 +183,7 @@ def md5(url, error_warn, frequency):
         return 'Added MD5 Check for {}'.format(url)
 
 def string(url, string, error_warn, frequency):
-    '''Add a database entry for a url to monitor for a string'''
+    """Add a database entry for a url to monitor for a string"""
     try:
         url_content = requests.get(url)
     except requests.exceptions.ConnectionError:
@@ -213,7 +219,7 @@ def string(url, string, error_warn, frequency):
         return 'Added String Check for {}'.format(url)
 
 def diff(url, error_warn, frequency):
-    '''Add a database entry for a url to monitor for any text changes'''
+    """Add a database entry for a url to monitor for any text changes"""
     try:
         url_content = requests.get(url)
     except requests.exceptions.ConnectionError:
@@ -263,10 +269,10 @@ def get_longest_md5():
         if len(str(check.check_frequency)) > longest_check_frequency:
             longest_check_frequency = len(str(check.check_frequency))
 
-    return ("url", longest_url), ("current_hash", longest_current_hash),\
-        ("old_hash", longest_old_hash), ("failed_connections",
-        longest_failed_connections), ("max_failed_connections",
-        longest_max_failed_connections), ("check_frequency",
+    return ('url', longest_url), ('current_hash', longest_current_hash),\
+        ('old_hash', longest_old_hash), ('failed_connections',
+        longest_failed_connections), ('max_failed_connections',
+        longest_max_failed_connections), ('check_frequency',
         longest_check_frequency)
 
 def get_longest_string():
@@ -292,10 +298,10 @@ def get_longest_string():
         if len(str(check.check_frequency)) > longest_check_frequency:
             longest_check_frequency = len(str(check.check_frequency))
 
-    return ("url", longest_url), ("string_to_match", longest_string_to_match),\
-        ("present", longest_present), ("failed_connections",
-        longest_failed_connections), ("max_failed_connections",
-        longest_max_failed_connections), ("check_frequency",
+    return ('url', longest_url), ('string_to_match', longest_string_to_match),\
+        ('present', longest_present), ('failed_connections',
+        longest_failed_connections), ('max_failed_connections',
+        longest_max_failed_connections), ('check_frequency',
         longest_check_frequency)
 
 def get_longest_diff():
@@ -320,10 +326,10 @@ def get_longest_diff():
         if len(str(check.check_frequency)) > longest_check_frequency:
             longest_check_frequency = len(str(check.check_frequency))
 
-    return ("url", longest_url), ("current_content", longest_current_content),\
-        ("failed_connections", longest_failed_connections),\
-        ("max_failed_connections", longest_max_failed_connections),\
-        ("check_frequency", longest_check_frequency)
+    return ('url', longest_url), ('current_content', longest_current_content),\
+        ('failed_connections', longest_failed_connections),\
+        ('max_failed_connections', longest_max_failed_connections),\
+        ('check_frequency', longest_check_frequency)
 
 def list_checks():
     """
@@ -520,10 +526,10 @@ failed_connections={}, max_failed_connections={}, check_frequency={})>'.format(
     elif args.delete:
         print('delete')
     else:
-        print('''Usage:
+        print("""Usage:
     -c --check\t\tRun checks against all monitored urls
     -l --list\t\tList stored checks from the database
     -a --add\t\tAdds a check in the database\n\t\t\t\tRequires md5/string/diff url
     --warn-after\t\tNumber of failed network attempts to warn after
     --check-frequency\tSpecify the number of seconds to check after
-    --database-location\tSpecify a database name and location''')
+    --database-location\tSpecify a database name and location""")
