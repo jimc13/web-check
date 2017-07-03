@@ -318,7 +318,7 @@ def get_longest_diff():
         if len(str(check.check_frequency)) > longest_check_frequency:
             longest_check_frequency = len(str(check.check_frequency))
 
-    return ("url", longest_url),\
+    return ("url", longest_url), ("current_content", longest_current_content),\
         ("failed_connections", longest_failed_connections),\
         ("max_failed_connections", longest_max_failed_connections),\
         ("check_frequency", longest_check_frequency)
@@ -376,6 +376,7 @@ def list_checks():
         # I couldn't work out how to implement class.variable so had to
         # write this out 3 times despite being close to having it as a function
         print(table_skel.format(str(check.url),
+                            str(check.current_content),
                             str(check.failed_connections),
                             str(check.max_failed_connections),
                             str(check.check_frequency)))
