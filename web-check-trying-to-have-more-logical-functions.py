@@ -405,18 +405,26 @@ def create_table(table_name, url, str_paramaters, int_paramaters):
         max_failed_connections = Column(Integer)
         check_frequency = Column(Integer)
         def __repr__(self):
-            return '<url(url={}, current_hash={}, old_hash={},\
-failed_connections={}, max_failed_connections={}, check_frequency={})>'.format(
-                            self.url, params self.failed_connections,
+            return '<url(url={}, {} failed_connections={}, \
+max_failed_connections={}, check_frequency={})>'.format(
+                            self.url, params, self.failed_connections,
                             self.max_failed_connections,
                             self.check_frequency)
+
 
     table_name.__table__
     Table(table_name, metadata,
             Column('id', Integer(), primary_key=True, nullable=False),
-            ##copying over data here, not sure if this is going to work how I
-            ## want it to.
+            Column('url', String(), unique=True),
+            for string in str_paramaters:
+                Column(string, String())
 
+            for interger in int_paramaters:
+                Column(interger, Integer()),
+
+            Column('failed_connections', Integer()),
+            Column('max_failed_connections', Integer()),
+            Column('check_frequency', Integer()),   schema=None)
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
@@ -440,40 +448,9 @@ if __name__ == '__main__':
     Base = declarative_base()
     metadata = MetaData()
 
-    class MD5Check(Base):
-        __tablename__ = 'md5s'
-        id = Column(Integer, primary_key=True)
-        url = Column(String, unique=True)
-        current_hash = Column(String)
-        old_hash = Column(String)
-        failed_connections = Column(Integer)
-        max_failed_connections = Column(Integer)
-        check_frequency = Column(Integer)
-        def __repr__(self):
-            return '<url(url={}, current_hash={}, old_hash={},\
-failed_connections={}, max_failed_connections={}, check_frequency={})>'.format(
-                            self.url, self.current_hash, self.old_hash,
-                            self.failed_connections,
-                            self.max_failed_connections,
-                            self.check_frequency)
-
-    class StringCheck(Base):
-        __tablename__ = 'strings'
-        id = Column(Integer, primary_key=True)
-        url = Column(String)
-        string_to_match = Column(String)
-        present = Column(Integer)
-        failed_connections = Column(Integer)
-        max_failed_connections = Column(Integer)
-        check_frequency = Column(Integer)
-        def __repr__(self):
-            return '<url(url={}, string_to_match={}, should_exist={},\
-failed_connections={}, max_failed_connections={}, check_frequency={})>'.format(
-                            self.url, self.string_to_match, self.should_exist,
-                            self.failed_connections,
-                            self.max_failed_connections,
-                            self.check_frequency)
-
+    MD5Check = create_table(md5s, (current_hash, old_hash), ())
+    StringCheck = create_table(strings, (string_to_match), (present))
+    DiffCheck = create_table(diffs, (current_content), ())
     class DiffCheck(Base):
         __tablename__ = 'diffs'
         id = Column(Integer, primary_key=True)
