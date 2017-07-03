@@ -307,8 +307,10 @@ def get_longest_diff():
     for check in session.query(DiffCheck).order_by(DiffCheck.id):
         if len(str(check.url)) > longest_url:
             longest_url = len(str(check.url))
-        if len(str(check.current_content)) > longest_current_content:
-            longest_current_content = len(str(check.current_content))
+        # Not checking how long current_content is since it will be long and
+        # make the table look silly
+        #if len(str(check.current_content)) > longest_current_content:
+        #    longest_current_content = len(str(check.current_content))
         if len(str(check.failed_connections)) > longest_failed_connections:
             longest_failed_connections = len(str(check.failed_connections))
         if len(str(check.max_failed_connections)) > \
