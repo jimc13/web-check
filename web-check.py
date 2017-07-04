@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 try:
     import sys
     import argparse
@@ -8,7 +8,7 @@ try:
     import hashlib
     import difflib
     import sqlalchemy
-    from sqlalchemy import create_engine, Column, Integer, String, Table, MetaData
+    from sqlalchemy import Column, Integer, String, Table, MetaData
     from sqlalchemy.ext.declarative import declarative_base
     from sqlalchemy.orm import sessionmaker
 except ImportError:
@@ -52,7 +52,7 @@ def failed_connection(check, session):
 # This should not alert if the failed connections was within the warning
 # limmit - no initial message has been sent
 def check_if_failed(check, session):
-    if check.failed_connections:
+    if check.failed_connections >= check.max_failed_connections:
         print('Reastablished connection to {} after {} failed \
 connections'.format(check.url, check.failed_connections))
         check.failed_connections = 0
@@ -446,7 +446,7 @@ if __name__ == '__main__':
         help='Specify a database name and location')
     args = parser.parse_args()
 
-    engine = create_engine('sqlite:///{}'.format(args.database_location))
+    engine = sqlalchemy.create_engine('sqlite:///{}'.format(args.database_location))
     Base = declarative_base()
     metadata = MetaData()
 
