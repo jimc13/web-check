@@ -146,7 +146,7 @@ def run_checks():
                             fromfile='Stored content for {}'.format(check.url),
                             tofile='New content for {}'.format(check.url)):
                 print(line)
-            DiffCheck.current_content = text
+            check.current_content = text
 
         check.next_run = time.time() + check.check_frequency
         session.commit()
