@@ -207,8 +207,6 @@ def string(url, string, error_warn, frequency):
     if string in get_text(url_content.text):
         string_exists = 1
 
-
-
     check = StringCheck(url=url,
                     string_to_match=string,
                     present=string_exists,
@@ -428,13 +426,29 @@ def list_checks():
 
     return ''
 
+def delete_check(check_type, url):
+    if check_type == 'md5':
+        check = session.query(MD5Check).filter(MD5Check.url == url)
+    elif check_type == 'string':
+        check = session.query(StringCheck).filter(StringCheck.url == url)
+    elif check_type == 'diff':
+        check = session.query(DiffCheck).filter(DiffCheck.url == url)
+    else:
+        return 'Chose either md5, string or diff check'
+
+    if check.delete():
+        session.commit()
+        return '{} check for {} removed'.format(check_type, url)
+
+    return 'There is no {} check for {}'.format(check_type, url)
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('-c', '--check', action='store_true',
         help='Run checks against all monitored urls')
     parser.add_argument('-l', '--list', action='store_true',
         help='Maximum number of set string that can occur')
-    parser.add_argument('-d', '--delete',
+    parser.add_argument('-d', '--delete', nargs='+',
         help='The entry to delete id must be used')
     parser.add_argument('-a', '--add', nargs='+',
         help='The type of check to setup and what url to check against')
@@ -559,34 +573,39 @@ check_frequency={})>'.format(
     elif args.add:
         if args.add[0] == 'md5':
             if len(args.add) != 2:
-                print('call as -a md5 \'url-to-check\'')
+                print('call as -a \'md5\' \'url-to-check\'')
                 exit(1)
-            try:
-                print(md5(args.add[1], args.warn_after, args.check_frequency))
-            except:
-                print('Exiting due to md5 error')
-                raise
+
+            print(md5(args.add[1], args.warn_after, args.check_frequency))
         elif args.add[0] == 'string':
             if len(args.add) != 3:
-                print('call as -a string string-to-check \'url-to-check\'')
+                print('call as -a \'string\' string-to-check \'url-to-check\'')
                 exit(1)
+
             print(string(args.add[2], args.add[1], args.warn_after,
                 args.check_frequency))
         elif args.add[0] == 'diff':
             if len(args.add) != 2:
-                print('call as -a diff \'url-to-check\'')
+                print('call as -a \'diff\' \'url-to-check\'')
                 exit(1)
+
             print(diff(args.add[1], args.warn_after, args.check_frequency))
         else:
             print('Choose either md5, string or diff.')
+
     elif args.delete:
-        print('delete')
+        if len(args.delete) != 2:
+            print('call as -d \'check_type\' \'url-to-remove\'')
+            exit(1)
+
+        print(delete_check(args.delete[0], args.delete[1]))
     else:
         print("""Usage:
     -c --check\t\tRun checks against all monitored urls
     -l --list\t\tList stored checks from the database
     -a --add\t\tAdds a check in the database\n\t\t\t\tRequires md5/string/diff\
  url
+    -d --delete\t\tDelete a check by specifying check_type url
     --warn-after\t\tNumber of failed network attempts to warn after
     --check-frequency\tSpecify the number of seconds to check after\n\t\t\t\t\
 Maybe I should call it check wavelength
