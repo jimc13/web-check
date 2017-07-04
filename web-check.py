@@ -442,6 +442,11 @@ def delete_check(check_type, url):
 
     return 'There is no {} check for {}'.format(check_type, url)
 
+def import_from_file(import_file):
+    with open(import_file) as f:
+        for line in f:
+            print(line)
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('-c', '--check', action='store_true',
@@ -458,6 +463,8 @@ if __name__ == '__main__':
         help='Specify the number of seconds to check after')
     parser.add_argument('--database-location', default='checks.db',
         help='Specify a database name and location')
+    parser.add_argument('--import-file',
+        help='Chose a file to populate the database from')
     args = parser.parse_args()
 
     engine = sqlalchemy.create_engine('sqlite:///{}'.format(args.database_location))
@@ -528,6 +535,14 @@ check_frequency={})>'.format(
                             self.next_run,
                             self.check_frequency)
 
+    class Meta(Base):
+        __tablename__ = 'meta'
+        id = Column(Integer, primary_key=True)
+        key = Column(String)
+        value = Column(String)
+        def __repr__(self):
+            return '<url(key={}, value={})>'.format(self.key, self.value)
+
     MD5Check.__table__
     Table('md5s', metadata,
             Column('id', Integer(), primary_key=True, nullable=False),
@@ -559,6 +574,12 @@ check_frequency={})>'.format(
             Column('max_failed_connections', Integer()),
             Column('next_run', Integer()),
             Column('check_frequency', Integer()),   schema=None)
+
+    Meta.__table__
+    Table('meta', metadata,
+            Column('id', Integer(), primary_key=True, nullable=False),
+            Column('key', String(), unique=True),
+            Column('value', String()),   schema=None)
 
     metadata.create_all(engine)
     Session = sessionmaker(bind=engine)
@@ -599,6 +620,15 @@ check_frequency={})>'.format(
             exit(1)
 
         print(delete_check(args.delete[0], args.delete[1]))
+    elif args.import_file:
+        Meta.import_file = args.import_file
+
+        #session.add(Meta(key='import_file', value=args.import_file))
+
+
+        session.commit()
+
+        import_from_file(args.import_file)
     else:
         print("""Usage:
     -c --check\t\tRun checks against all monitored urls
@@ -609,4 +639,5 @@ check_frequency={})>'.format(
     --warn-after\t\tNumber of failed network attempts to warn after
     --check-frequency\tSpecify the number of seconds to check after\n\t\t\t\t\
 Maybe I should call it check wavelength
-    --database-location\tSpecify a database name and location""")
+    --database-location\tSpecify a database name and location
+    --import-file\t\tSpecify a file to populate the database from""")
