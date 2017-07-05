@@ -488,7 +488,7 @@ def import_from_file(import_file):
                         return 'Import failed - {} is not formatted \
                             correctly'.format(line)
 
-                print(string(url, string_to_check, error_warn, frequency)
+                print(string(url, string_to_check, error_warn, frequency))
             elif check_type == 'diff':
                 # There are two accepted line formats:
                 # check_type|url|error_warn|frequency
