@@ -1,4 +1,8 @@
 #!/usr/bin/env python3
+# TO DO:
+# Check the database is a file
+# Change the max_failed_connections to max_down_time
+
 try:
     import sys
     import argparse
@@ -525,7 +529,8 @@ def import_from_file(import_file):
                 else:
                     url = data
 
-                print(add_string(url, string_to_check, warn_after, check_frequency))
+                print(add_string(url, string_to_check, warn_after,
+                        check_frequency))
             elif check_type == 'diff':
                 # There are two accepted line formats:
                 # check_type|url|warn_after|check_frequency
@@ -573,7 +578,8 @@ if __name__ == '__main__':
         help='Chose a file to populate the database from')
     args = parser.parse_args()
 
-    engine = sqlalchemy.create_engine('sqlite:///{}'.format(args.database_location))
+    engine = sqlalchemy.create_engine('sqlite:///{}'.format(
+                                                args.database_location))
     Base = declarative_base()
     metadata = MetaData()
 
