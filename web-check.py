@@ -482,7 +482,7 @@ def import_from_file(import_file):
                         correctly'.format(line)
                 if '|' in string_to_check:
                     try:
-                        string_to_check, error_warn, frequency =
+                        string_to_check, error_warn, frequency =\
                             string_to_check.split('|')
                     except ValueError:
                         return 'Import failed - {} is not formatted \
