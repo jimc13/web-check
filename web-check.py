@@ -535,14 +535,6 @@ check_frequency={})>'.format(
                             self.next_run,
                             self.check_frequency)
 
-    class Meta(Base):
-        __tablename__ = 'meta'
-        id = Column(Integer, primary_key=True)
-        key = Column(String)
-        value = Column(String)
-        def __repr__(self):
-            return '<url(key={}, value={})>'.format(self.key, self.value)
-
     MD5Check.__table__
     Table('md5s', metadata,
             Column('id', Integer(), primary_key=True, nullable=False),
@@ -574,12 +566,6 @@ check_frequency={})>'.format(
             Column('max_failed_connections', Integer()),
             Column('next_run', Integer()),
             Column('check_frequency', Integer()),   schema=None)
-
-    Meta.__table__
-    Table('meta', metadata,
-            Column('id', Integer(), primary_key=True, nullable=False),
-            Column('key', String(), unique=True),
-            Column('value', String()),   schema=None)
 
     metadata.create_all(engine)
     Session = sessionmaker(bind=engine)
@@ -621,13 +607,6 @@ check_frequency={})>'.format(
 
         print(delete_check(args.delete[0], args.delete[1]))
     elif args.import_file:
-        Meta.import_file = args.import_file
-
-        #session.add(Meta(key='import_file', value=args.import_file))
-
-
-        session.commit()
-
         import_from_file(args.import_file)
     else:
         print("""Usage:
