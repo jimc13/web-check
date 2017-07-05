@@ -478,7 +478,7 @@ def import_from_file(import_file):
                 # check_type|url|string_to_check|error_warn|frequency
                 # and check_type|url
                 try:
-                    url, string_to_check = data.split('|', 1)
+                    string_to_check, url = data.split('|', 1)
                 except ValueError:
                     return error_message.format(line)
                 if '|' in string_to_check:
