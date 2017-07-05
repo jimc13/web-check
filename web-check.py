@@ -445,6 +445,11 @@ def delete_check(check_type, url):
 def import_from_file(import_file):
     with open(import_file, r) as f:
         for line in f:
+            # Allow comments, note they must be the first char
+            # line.split('#', 1) would catch comments in strings to check and
+            # urls to check but might be a better implementation.
+            if line[0] == '#':
+                continue
             try:
                 check_type, data = line.split('|')
             except ValueError:
