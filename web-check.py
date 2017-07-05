@@ -185,6 +185,7 @@ def md5(url, error_warn, frequency):
     try:
         session.commit()
     except sqlalchemy.exc.IntegrityError:
+        session.rollback()
         return 'An entry for {} is already in database'.format(url)
     else:
         return 'Added MD5 Check for {}'.format(url)
@@ -443,6 +444,7 @@ def delete_check(check_type, url):
     return 'There is no {} check for {}'.format(check_type, url)
 
 def import_from_file(import_file):
+    print(1)
     error_message = 'Import failed - \'{}\' is not formatted correctly'
     with open(import_file, 'r') as f:
         for line in f:
