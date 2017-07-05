@@ -444,7 +444,6 @@ def delete_check(check_type, url):
     return 'There is no {} check for {}'.format(check_type, url)
 
 def import_from_file(import_file):
-    print(1)
     error_message = 'Import failed - \'{}\' is not formatted correctly'
     with open(import_file, 'r') as f:
         for line in f:
