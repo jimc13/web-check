@@ -63,8 +63,6 @@ connections'.format(check.url, check.failed_connections))
 # an explanation
 def run_checks():
     """Perform hash, string and difference checks for all stored url's"""
-    # The frequency field is currently being ignored whilst I get everything
-    # else working
     for check in session.query(MD5Check).filter(MD5Check.next_run <
                     time.time()).order_by(MD5Check.id):
         try:
@@ -81,7 +79,7 @@ def run_checks():
         try:
             new_hash = get_md5(url_content.text)
         except:
-            print('Failed to hash response from {}'.format(check.url))
+            print('Error: Failed to hash response from {}'.format(check.url))
             continue
 
         if new_hash != check.current_hash:
@@ -152,57 +150,76 @@ def run_checks():
         session.commit()
     return ''
 
-def md5(url, error_warn, frequency):
+def add_md5(url, warn_after, check_frequency):
     """
     Add a database entry for a url to monitor the md5 hash of.  Returns message
-    relating to success
-
-    (I've realised this is going to give incorrect error codes).
+relating to success.
     """
+    try:
+        warn_after = int(warn_after)
+    except ValueError:
+        return 'Error: warn_after must be an integer'
+
+    try:
+        check_frequency = int(check_frequency)
+    except ValueError:
+        return 'Error: check_frequency must be an integer'
+
     try:
         url_content = requests.get(url)
     except requests.exceptions.ConnectionError:
-        return 'Could not connect to chosen url {}'.format(url)
+        return 'Error: Could not connect to chosen url {}'.format(url)
     except requests.exceptions.MissingSchema as e:
         return e
     except requests.exceptions.InvalidSchema as e:
         return e
 
     if url_content.status_code != 200:
-        return '{} code from server'.format(url_content.status_code)
+        return 'Error: {} code from server'.format(url_content.status_code)
 
     try:
         current_hash = get_md5(url_content.text)
     except:
-        return 'Failed to hash response from {}'.format(url)
+        return 'Error: Failed to hash response from {}'.format(url)
     check = MD5Check(url=url,
                 current_hash=current_hash,
                 failed_connections=0,
-                max_failed_connections=error_warn,
+                max_failed_connections=warn_after,
                 next_run=0,
-                check_frequency=frequency)
+                check_frequency=check_frequency)
     session.add(check)
     try:
         session.commit()
     except sqlalchemy.exc.IntegrityError:
         session.rollback()
-        return 'An entry for {} is already in database'.format(url)
+        return 'Error: An entry for {} is already in database'.format(url)
     else:
         return 'Added MD5 Check for {}'.format(url)
 
-def string(url, string, error_warn, frequency):
-    """Add a database entry for a url to monitor for a string"""
+def add_string(url, string, warn_after, check_frequency):
+    """Add a database entry for a url to monitor for a string.  Returns message
+relating to success."""
+    try:
+        warn_after = int(warn_after)
+    except ValueError:
+        return 'Error: warn_after must be an integer'
+
+    try:
+        check_frequency = int(check_frequency)
+    except ValueError:
+        return 'Error: check_frequency must be an integer'
+
     try:
         url_content = requests.get(url)
     except requests.exceptions.ConnectionError:
-        return 'Could not connect to chosen url {}'.format(url)
+        return 'Error: Could not connect to chosen url {}'.format(url)
     except requests.exceptions.MissingSchema as e:
         return e
     except requests.exceptions.InvalidSchema as e:
         return e
 
     if url_content.status_code != 200:
-        return '{} code from server'.format(url_content.status_code)
+        return 'Error: {} code from server'.format(url_content.status_code)
 
     string_exists = 0
     if string in get_text(url_content.text):
@@ -212,15 +229,15 @@ def string(url, string, error_warn, frequency):
                     string_to_match=string,
                     present=string_exists,
                     failed_connections=0,
-                    max_failed_connections=error_warn,
+                    max_failed_connections=warn_after,
                     next_run= 0,
-                    check_frequency=frequency)
+                    check_frequency=check_frequency)
     session.add(check)
     try:
         session.commit()
     except sqlalchemy.exc.IntegrityError:
         session.rollback()
-        return 'An entry for {} is already in database'.format(url)
+        return 'Error: An entry for {} is already in database'.format(url)
     else:
         if string_exists:
             print('{} is currently present, will alert if this changes'.format(
@@ -231,37 +248,48 @@ def string(url, string, error_warn, frequency):
 
         return 'Added String Check for {}'.format(url)
 
-def diff(url, error_warn, frequency):
-    """Add a database entry for a url to monitor for any text changes"""
+def add_diff(url, warn_after, check_frequency):
+    """Add a database entry for a url to monitor for any text changes.
+Returns message relating to success."""
+    try:
+        warn_after = int(warn_after)
+    except ValueError:
+        return 'Error: warn_after must be an integer'
+
+    try:
+        check_frequency = int(check_frequency)
+    except ValueError:
+        return 'Error: check_frequency must be an integer'
+
     try:
         url_content = requests.get(url)
     except requests.exceptions.ConnectionError:
-        return 'Could not connect to chosen url {}'.format(url)
+        return 'Error: Could not connect to chosen url {}'.format(url)
     except requests.exceptions.MissingSchema as e:
         return e
     except requests.exceptions.InvalidSchema as e:
         return e
 
     if url_content.status_code != 200:
-        return '{} code from server'.format(url_content.status_code)
+        return 'Error: {} code from server'.format(url_content.status_code)
 
     check = DiffCheck(url=url,
                     current_content=get_text(url_content.text),
                     failed_connections=0,
-                    max_failed_connections=error_warn,
+                    max_failed_connections=warn_after,
                     next_run=0,
-                    check_frequency=frequency)
+                    check_frequency=check_frequency)
     session.add(check)
     try:
         session.commit()
     except sqlalchemy.exc.IntegrityError:
         session.rollback()
-        return 'An entry for {} is already in database'.format(url)
+        return 'Error: An entry for {} is already in database'.format(url)
     else:
         return 'Added Diff Check for {}'.format(url)
 
 
-    return (url, string, error_warn, frequency, database)
+    return (url, string, warn_after, check_frequency, database)
 
 def get_longest_md5():
     longest_url = 3
@@ -464,25 +492,25 @@ def import_from_file(import_file):
             except ValueError:
                 return error_message.format(line)
 
-            error_warn = default_warn_after
-            frequency = default_check_frequency
+            warn_after = default_warn_after
+            check_frequency = default_check_frequency
             if check_type == 'md5':
                 # There are two accepted line formats:
-                # check_type|url|error_warn|frequency
+                # check_type|url|warn_after|check_frequency
                 # and check_type|url
                 if '|' in data:
                     try:
-                        url, error_warn, frequency = data.split('|')
+                        url, warn_after, check_frequency = data.split('|')
                     except ValueError:
                         return error_message.format(line)
 
                 else:
                     url = data
 
-                print(md5(url, error_warn, frequency))
+                print(add_md5(url, warn_after, check_frequency))
             elif check_type == 'string':
                 # There are two accepted line formats:
-                # check_type|url|string_to_check|error_warn|frequency
+                # check_type|url|string_to_check|warn_after|check_frequency
                 # and check_type|url
                 try:
                     string_to_check, data = data.split('|', 1)
@@ -490,28 +518,28 @@ def import_from_file(import_file):
                     return error_message.format(line)
                 if '|' in data:
                     try:
-                        url, error_warn, frequency = data.split('|')
+                        url, warn_after, check_frequency = data.split('|')
                     except ValueError:
                         return error_message.format(line)
 
                 else:
                     url = data
 
-                print(string(url, string_to_check, error_warn, frequency))
+                print(add_string(url, string_to_check, warn_after, check_frequency))
             elif check_type == 'diff':
                 # There are two accepted line formats:
-                # check_type|url|error_warn|frequency
+                # check_type|url|warn_after|check_frequency
                 # and check_type|url
                 if '|' in data:
                     try:
-                        url, error_warn, frequency = data.split('|')
+                        url, warn_after, check_frequency = data.split('|')
                     except ValueError:
                         return error_message.format(line)
 
                 else:
                     url = data
 
-                print(diff(url, error_warn, frequency))
+                print(add_diff(url, warn_after, check_frequency))
             else:
                 return error_message.format(line)
 
@@ -535,7 +563,7 @@ if __name__ == '__main__':
     parser.add_argument('--warn-after',
         default=default_warn_after,
         help='Number of failed network attempts to warn after')
-    parser.add_argument('--check-frequency',
+    parser.add_argument('--check-check_frequency',
         default=default_check_frequency,
         help='Specify the number of seconds to check after')
     parser.add_argument('--database-location',
@@ -661,20 +689,20 @@ check_frequency={})>'.format(
                 print('call as -a \'md5\' \'url-to-check\'')
                 exit(1)
 
-            print(md5(args.add[1], args.warn_after, args.check_frequency))
+            print(add_md5(args.add[1], args.warn_after, args.check_frequency))
         elif args.add[0] == 'string':
             if len(args.add) != 3:
                 print('call as -a \'string\' string-to-check \'url-to-check\'')
                 exit(1)
 
-            print(string(args.add[2], args.add[1], args.warn_after,
+            print(add_string(args.add[2], args.add[1], args.warn_after,
                 args.check_frequency))
         elif args.add[0] == 'diff':
             if len(args.add) != 2:
                 print('call as -a \'diff\' \'url-to-check\'')
                 exit(1)
 
-            print(diff(args.add[1], args.warn_after, args.check_frequency))
+            print(add_diff(args.add[1], args.warn_after, args.check_frequency))
         else:
             print('Choose either md5, string or diff.')
 
@@ -697,7 +725,7 @@ check_frequency={})>'.format(
  url
     -d --delete\t\tDelete a check by specifying check_type url
     --warn-after\t\tNumber of failed network attempts to warn after
-    --check-frequency\tSpecify the number of seconds to check after\n\t\t\t\t\
+    --check-check_frequency\tSpecify the number of seconds to check after\n\t\t\t\t\
 Maybe I should call it check wavelength
     --database-location\tSpecify a database name and location
     --import-file\t\tSpecify a file to populate the database from""")
