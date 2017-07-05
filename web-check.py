@@ -219,6 +219,7 @@ def string(url, string, error_warn, frequency):
     try:
         session.commit()
     except sqlalchemy.exc.IntegrityError:
+        session.rollback()
         return 'An entry for {} is already in database'.format(url)
     else:
         if string_exists:
@@ -254,6 +255,7 @@ def diff(url, error_warn, frequency):
     try:
         session.commit()
     except sqlalchemy.exc.IntegrityError:
+        session.rollback()
         return 'An entry for {} is already in database'.format(url)
     else:
         return 'Added Diff Check for {}'.format(url)
