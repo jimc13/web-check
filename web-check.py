@@ -443,11 +443,69 @@ def delete_check(check_type, url):
     return 'There is no {} check for {}'.format(check_type, url)
 
 def import_from_file(import_file):
-    with open(import_file) as f:
+    with open(import_file, r) as f:
         for line in f:
-            print(line)
+            try:
+                check_type, data = line.split('|')
+            except ValueError:
+                return 'Import failed - {} is not formatted correctly'.format(
+                                                                        line)
+
+            url = data
+            error_warn = default_warn_after
+            frequency = default_check_frequency
+            if check_type == 'md5':
+                # There are two accepted line formats:
+                # check_type|url|error_warn|frequency
+                # and check_type|url
+                if '|' in data:
+                    try:
+                        url, error_warn, frequency = data.split('|')
+                    except ValueError:
+                        return 'Import failed - {} is not formatted correctly'
+                                .format(line)
+
+                print(md5(url, error_warn, frequency))
+            elif check_type == 'string':
+                # There are two accepted line formats:
+                # check_type|url|string_to_check|error_warn|frequency
+                # and check_type|url
+                try:
+                    url, string_to_check = data.split('|', 1)
+                except ValueError:
+                    return 'Import failed - {} is not formatted correctly'
+                            .format(line)
+                if '|' in string_to_check:
+                    try:
+                        string_to_check, error_warn, frequency =
+                            string_to_check.split('|')
+                    except ValueError:
+                        return 'Import failed - {} is not formatted correctly'
+                                .format(line)
+
+                print(string(url, string_to_check, error_warn, frequency)
+            elif check_type == 'diff':
+                # There are two accepted line formats:
+                # check_type|url|error_warn|frequency
+                # and check_type|url
+                if '|' in data:
+                    try:
+                        url, error_warn, frequency = data.split('|')
+                    except ValueError:
+                        return 'Import failed - {} is not formatted correctly'
+                                .format(line)
+
+                print(diff(url, error_warn, frequency))
+            else:
+                return 'Import failed - {} is not formatted correctly'.format(
+                                                                        line)
+
 
 if __name__ == '__main__':
+    default_warn_after = 24
+    default_check_frequency = 3600
+    default_database_location = 'checks.db'
+
     parser = argparse.ArgumentParser()
     parser.add_argument('-c', '--check', action='store_true',
         help='Run checks against all monitored urls')
@@ -457,11 +515,14 @@ if __name__ == '__main__':
         help='The entry to delete id must be used')
     parser.add_argument('-a', '--add', nargs='+',
         help='The type of check to setup and what url to check against')
-    parser.add_argument('--warn-after', default=24,
+    parser.add_argument('--warn-after',
+        default=default_warn_after,
         help='Number of failed network attempts to warn after')
-    parser.add_argument('--check-frequency', default=3600,
+    parser.add_argument('--check-frequency',
+        default=default_check_frequency,
         help='Specify the number of seconds to check after')
-    parser.add_argument('--database-location', default='checks.db',
+    parser.add_argument('--database-location',
+        default=default_database_location,
         help='Specify a database name and location')
     parser.add_argument('--import-file',
         help='Chose a file to populate the database from')
@@ -607,7 +668,7 @@ check_frequency={})>'.format(
 
         print(delete_check(args.delete[0], args.delete[1]))
     elif args.import_file:
-        import_from_file(args.import_file)
+        print(import_from_file(args.import_file))
     else:
         print("""Usage:
     -c --check\t\tRun checks against all monitored urls
