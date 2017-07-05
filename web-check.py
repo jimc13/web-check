@@ -43,7 +43,7 @@ def failed_connection(check, session):
     # prevents race conditions caused by +=
     check.failed_connections = check.failed_connections + 1
     if check.failed_connections - 1 == check.max_failed_connections:
-        print('{} failed connections to {} limmit was set at {}'.format(
+        print('{} failed connections to {} limit was set at {}'.format(
                                                 check.failed_connections,
                                                 check.url,
                                                 check.max_failed_connections))
@@ -162,7 +162,7 @@ def md5(url, error_warn, frequency):
     try:
         url_content = requests.get(url)
     except requests.exceptions.ConnectionError:
-        return 'Could not connect to chosen url'
+        return 'Could not connect to chosen url {}'.format(url)
     except requests.exceptions.MissingSchema as e:
         return e
     except requests.exceptions.InvalidSchema as e:
@@ -195,7 +195,7 @@ def string(url, string, error_warn, frequency):
     try:
         url_content = requests.get(url)
     except requests.exceptions.ConnectionError:
-        return 'Could not connect to chosen url'
+        return 'Could not connect to chosen url {}'.format(url)
     except requests.exceptions.MissingSchema as e:
         return e
     except requests.exceptions.InvalidSchema as e:
@@ -236,7 +236,7 @@ def diff(url, error_warn, frequency):
     try:
         url_content = requests.get(url)
     except requests.exceptions.ConnectionError:
-        return 'Could not connect to chosen url'
+        return 'Could not connect to chosen url {}'.format(url)
     except requests.exceptions.MissingSchema as e:
         return e
     except requests.exceptions.InvalidSchema as e:
@@ -446,7 +446,10 @@ def delete_check(check_type, url):
     return 'There is no {} check for {}'.format(check_type, url)
 
 def import_from_file(import_file):
-    error_message = 'Import failed: \'{}\' is not formatted correctly'
+    """
+    Add's new database entrys from a file
+    """
+    error_message = 'Import failed: {} is not formatted correctly'
     with open(import_file, 'r') as f:
         for line in f:
             # Allow comments, note they must be the first char
@@ -504,6 +507,8 @@ def import_from_file(import_file):
                 print(diff(url, error_warn, frequency))
             else:
                 return error_message.format(line)
+
+    return ''
 
 
 if __name__ == '__main__':
@@ -673,7 +678,10 @@ check_frequency={})>'.format(
 
         print(delete_check(args.delete[0], args.delete[1]))
     elif args.import_file:
-        print(import_from_file(args.import_file))
+        error = import_from_file(args.import_file)
+        if error:
+            print(error)
+            exit(1)
     else:
         print("""Usage:
     -c --check\t\tRun checks against all monitored urls
