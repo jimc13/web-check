@@ -464,7 +464,6 @@ def import_from_file(import_file):
             except ValueError:
                 return error_message.format(line)
 
-            url = data
             error_warn = default_warn_after
             frequency = default_check_frequency
             if check_type == 'md5':
@@ -476,6 +475,8 @@ def import_from_file(import_file):
                         url, error_warn, frequency = data.split('|')
                     except ValueError:
                         return error_message.format(line)
+                    else:
+                        url = data
 
                 print(md5(url, error_warn, frequency))
             elif check_type == 'string':
@@ -483,15 +484,16 @@ def import_from_file(import_file):
                 # check_type|url|string_to_check|error_warn|frequency
                 # and check_type|url
                 try:
-                    string_to_check, url = data.split('|', 1)
+                    string_to_check, data = data.split('|', 1)
                 except ValueError:
                     return error_message.format(line)
-                if '|' in string_to_check:
+                if '|' in data:
                     try:
-                        string_to_check, error_warn, frequency =\
-                            string_to_check.split('|')
+                        url, error_warn, frequency = url.split('|')
                     except ValueError:
                         return error_message.format(line)
+                    else:
+                        url = data
 
                 print(string(url, string_to_check, error_warn, frequency))
             elif check_type == 'diff':
@@ -503,6 +505,8 @@ def import_from_file(import_file):
                         url, error_warn, frequency = data.split('|')
                     except ValueError:
                         return error_message.format(line)
+                    else:
+                        url = data
 
                 print(diff(url, error_warn, frequency))
             else:
