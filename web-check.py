@@ -448,6 +448,7 @@ def import_from_file(import_file):
         for line in f:
             # I don't want the new line's
             line = line.rstrip()
+            session = Session()
             # Allow comments, note they must be the first char
             # line.split('#', 1) would catch comments in strings to check and
             # urls to check but might be a better implementation.
