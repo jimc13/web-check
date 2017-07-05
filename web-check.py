@@ -444,19 +444,18 @@ def delete_check(check_type, url):
     return 'There is no {} check for {}'.format(check_type, url)
 
 def import_from_file(import_file):
-    error_message = 'Import failed - \'{}\' is not formatted correctly'
+    error_message = 'Import failed: \'{}\' is not formatted correctly'
     with open(import_file, 'r') as f:
         for line in f:
-            # I don't want the new line's
-            line = line.rstrip()
-            session = Session()
             # Allow comments, note they must be the first char
             # line.split('#', 1) would catch comments in strings to check and
             # urls to check but might be a better implementation.
             if line[0] == '#':
                 continue
+            # I don't want the new line's
+            line = line.rstrip()
             try:
-                check_type, data = line.split('|')
+                check_type, data = line.split('|', 1)
             except ValueError:
                 return error_message.format(line)
 
