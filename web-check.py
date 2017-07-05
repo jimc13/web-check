@@ -445,6 +445,11 @@ def delete_check(check_type, url):
 def import_from_file(import_file):
     with open(import_file, r) as f:
         for line in f:
+            # Allow comments, note they must be the first char
+            # line.split('#', 1) would catch comments in strings to check and
+            # urls to check but might be a better implementation.
+            if line[0] == '#':
+                continue
             try:
                 check_type, data = line.split('|')
             except ValueError:
@@ -462,8 +467,8 @@ def import_from_file(import_file):
                     try:
                         url, error_warn, frequency = data.split('|')
                     except ValueError:
-                        return 'Import failed - {} is not formatted correctly'
-                                .format(line)
+                        return 'Import failed - {} is not formatted \
+                            correctly'.format(line)
 
                 print(md5(url, error_warn, frequency))
             elif check_type == 'string':
@@ -473,15 +478,15 @@ def import_from_file(import_file):
                 try:
                     url, string_to_check = data.split('|', 1)
                 except ValueError:
-                    return 'Import failed - {} is not formatted correctly'
-                            .format(line)
+                    return 'Import failed - {} is not formatted \
+                        correctly'.format(line)
                 if '|' in string_to_check:
                     try:
                         string_to_check, error_warn, frequency =
                             string_to_check.split('|')
                     except ValueError:
-                        return 'Import failed - {} is not formatted correctly'
-                                .format(line)
+                        return 'Import failed - {} is not formatted \
+                            correctly'.format(line)
 
                 print(string(url, string_to_check, error_warn, frequency)
             elif check_type == 'diff':
@@ -492,8 +497,8 @@ def import_from_file(import_file):
                     try:
                         url, error_warn, frequency = data.split('|')
                     except ValueError:
-                        return 'Import failed - {} is not formatted correctly'
-                                .format(line)
+                        return 'Import failed - {} is not formatted \
+                            correctly'.format(line)
 
                 print(diff(url, error_warn, frequency))
             else:
