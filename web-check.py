@@ -45,7 +45,7 @@ def get_md5(html):
 def failed_connection(check, session):
     current_time = time.time()
     if not check.failed_since:
-        check.failed_since == current_time
+        check.failed_since = current_time
     if current_time - check.failed_since <= check.max_down_time:
         print('Warning: Can\'t connect to {}'.format(check.url))
 
