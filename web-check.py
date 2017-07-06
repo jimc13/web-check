@@ -570,7 +570,7 @@ if __name__ == '__main__':
     parser.add_argument('--warn-after',
         default=default_warn_after,
         help='Number of seconds a site can be down for before warning')
-    parser.add_argument('--check-check_frequency',
+    parser.add_argument('--check-frequency',
         default=default_check_frequency,
         help='Specify the number of seconds to check after')
     parser.add_argument('--database-location',
@@ -733,7 +733,7 @@ check_frequency={})>'.format(
  url
     -d --delete\t\tDelete a check by specifying check_type url
     --warn-after\t\tNumber of seconds a site can be down for before warning
-    --check-check_frequency\tSpecify the number of seconds to check after\n\
+    --check-frequency\tSpecify the number of seconds to check after\n\
 \t\t\t\tMaybe I should call it check wavelength
     --database-location\tSpecify a database name and location
     --import-file\t\tSpecify a file to populate the database from""")
