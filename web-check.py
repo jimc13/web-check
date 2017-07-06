@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # TO DO:
 # Check the database is a file
-# Change the max_failed_connections to max_down_time
+# Allow management through a file that is checked for changes on runtime
 
 try:
     import sys
@@ -43,28 +43,26 @@ def get_md5(html):
     return hashlib.md5(get_text(html).encode('utf-8')).hexdigest()
 
 def failed_connection(check, session):
-    # According to the internet this generates the correct SQL and
-    # prevents race conditions caused by +=
-    check.failed_connections = check.failed_connections + 1
-    if check.failed_connections - 1 == check.max_failed_connections:
-        print('{} failed connections to {} limit was set at {}'.format(
-                                                check.failed_connections,
-                                                check.url,
-                                                check.max_failed_connections))
+    current_time = time.time()
+    if not check.failed_since:
+        check.failed_since == current_time
+    if current_time - check.failed_since <= check.max_down_time:
+        print('Warning: Can\'t connect to {}'.format(check.url))
+
     session.commit()
+    return ''
 
 # This should not alert if the failed connections was within the warning
 # limmit - no initial message has been sent
 def check_if_failed(check, session):
-    if check.failed_connections >= check.max_failed_connections:
-        print('Reastablished connection to {} after {} failed \
-connections'.format(check.url, check.failed_connections))
-        check.failed_connections = 0
-        session.commit()
+    last_run = check.next_run - check.frequency
+    if last_run - check.failed_since >= check.max_down_time:
+        print('Reastablished connection to {}'.format(check.url))
 
-# check will be run from a cron so should warn/log on errors depending on
-# serverity, the rest of the functions should just error out and give the user
-# an explanation
+    check.failed_since = 0
+    session.commit()
+    return ''
+
 def run_checks():
     """Perform hash, string and difference checks for all stored url's"""
     for check in session.query(MD5Check).filter(MD5Check.next_run <
@@ -157,7 +155,7 @@ def run_checks():
 def add_md5(url, warn_after, check_frequency):
     """
     Add a database entry for a url to monitor the md5 hash of.  Returns message
-relating to success.
+    relating to success.
     """
     try:
         warn_after = int(warn_after)
@@ -187,8 +185,8 @@ relating to success.
         return 'Error: Failed to hash response from {}'.format(url)
     check = MD5Check(url=url,
                 current_hash=current_hash,
-                failed_connections=0,
-                max_failed_connections=warn_after,
+                failed_since=0,
+                max_down_time=warn_after,
                 next_run=0,
                 check_frequency=check_frequency)
     session.add(check)
@@ -201,8 +199,10 @@ relating to success.
         return 'Added MD5 Check for {}'.format(url)
 
 def add_string(url, string, warn_after, check_frequency):
-    """Add a database entry for a url to monitor for a string.  Returns message
-relating to success."""
+    """
+    Add a database entry for a url to monitor for a string.  Returns message
+    relating to success.
+    """
     try:
         warn_after = int(warn_after)
     except ValueError:
@@ -232,8 +232,8 @@ relating to success."""
     check = StringCheck(url=url,
                     string_to_match=string,
                     present=string_exists,
-                    failed_connections=0,
-                    max_failed_connections=warn_after,
+                    failed_since=0,
+                    max_down_time=warn_after,
                     next_run= 0,
                     check_frequency=check_frequency)
     session.add(check)
@@ -253,8 +253,10 @@ relating to success."""
         return 'Added String Check for {}'.format(url)
 
 def add_diff(url, warn_after, check_frequency):
-    """Add a database entry for a url to monitor for any text changes.
-Returns message relating to success."""
+    """
+    Add a database entry for a url to monitor for any text changes.
+    Returns message relating to success.
+    """
     try:
         warn_after = int(warn_after)
     except ValueError:
@@ -279,8 +281,8 @@ Returns message relating to success."""
 
     check = DiffCheck(url=url,
                     current_content=get_text(url_content.text),
-                    failed_connections=0,
-                    max_failed_connections=warn_after,
+                    failed_since=0,
+                    max_down_time=warn_after,
                     next_run=0,
                     check_frequency=check_frequency)
     session.add(check)
@@ -299,8 +301,8 @@ def get_longest_md5():
     longest_url = 3
     longest_current_hash = 12
     longest_old_hash = 8
-    longest_failed_connections = 18
-    longest_max_failed_connections = 22
+    longest_failed_since = 12
+    longest_max_down_time = 14
     longest_next_run = 8
     longest_check_frequency = 15
     for check in session.query(MD5Check).order_by(MD5Check.id):
@@ -310,12 +312,12 @@ def get_longest_md5():
             longest_current_hash = len(str(check.current_hash))
         if len(str(check.old_hash)) > longest_old_hash:
             longest_old_hash = len(str(check.old_hash))
-        if len(str(check.failed_connections)) > longest_failed_connections:
-            longest_failed_connections = len(str(check.failed_connections))
-        if len(str(check.max_failed_connections)) > \
-                                longest_max_failed_connections:
-            longest_max_failed_connections =\
-                                    len(str(check.max_failed_connections))
+        if len(str(check.failed_since)) > longest_failed_since:
+            longest_failed_since = len(str(check.failed_since))
+        if len(str(check.max_down_time)) > \
+                                longest_max_down_time:
+            longest_max_down_time =\
+                                    len(str(check.max_down_time))
         if len(str(check.next_run)) > longest_next_run:
             longest_next_run = len(str(check.next_run))
         if len(str(check.check_frequency)) > longest_check_frequency:
@@ -324,8 +326,8 @@ def get_longest_md5():
     return (('url', longest_url),
         ('current_hash', longest_current_hash),
         ('old_hash', longest_old_hash),
-        ('failed_connections', longest_failed_connections),
-        ('max_failed_connections', longest_max_failed_connections),
+        ('failed_since', longest_failed_since),
+        ('max_down_time', longest_max_down_time),
         ('next_run', longest_next_run),
         ('check_frequency', longest_check_frequency))
 
@@ -333,8 +335,8 @@ def get_longest_string():
     longest_url = 3
     longest_string_to_match = 15
     longest_present = 7
-    longest_failed_connections = 18
-    longest_max_failed_connections = 22
+    longest_failed_since = 12
+    longest_max_down_time = 14
     longest_next_run = 8
     longest_check_frequency = 15
     for check in session.query(StringCheck).order_by(StringCheck.id):
@@ -344,12 +346,12 @@ def get_longest_string():
             longest_string_to_match = len(str(check.string_to_match))
         if len(str(check.present)) > longest_present:
             longest_present = len(str(check.present))
-        if len(str(check.failed_connections)) > longest_failed_connections:
-            longest_failed_connections = len(str(check.failed_connections))
-        if len(str(check.max_failed_connections)) > \
-                                longest_max_failed_connections:
-            longest_max_failed_connections =\
-                                    len(str(check.max_failed_connections))
+        if len(str(check.failed_since)) > longest_failed_since:
+            longest_failed_since = len(str(check.failed_since))
+        if len(str(check.max_down_time)) > \
+                                longest_max_down_time:
+            longest_max_down_time =\
+                                    len(str(check.max_down_time))
         if len(str(check.next_run)) > longest_next_run:
             longest_next_run = len(str(check.next_run))
         if len(str(check.check_frequency)) > longest_check_frequency:
@@ -358,16 +360,16 @@ def get_longest_string():
     return (('url', longest_url),
         ('string_to_match', longest_string_to_match),
         ('present', longest_present),
-        ('failed_connections', longest_failed_connections),
-        ('max_failed_connections', longest_max_failed_connections),
+        ('failed_since', longest_failed_since),
+        ('max_down_time', longest_max_down_time),
         ('next_run', longest_next_run),
         ('check_frequency', longest_check_frequency))
 
 def get_longest_diff():
     longest_url = 3
     longest_current_content = 15
-    longest_failed_connections = 18
-    longest_max_failed_connections = 22
+    longest_failed_since = 12
+    longest_max_down_time = 14
     longest_next_run = 8
     longest_check_frequency = 15
     for check in session.query(DiffCheck).order_by(DiffCheck.id):
@@ -377,12 +379,12 @@ def get_longest_diff():
         # make the table look silly
         #if len(str(check.current_content)) > longest_current_content:
         #    longest_current_content = len(str(check.current_content))
-        if len(str(check.failed_connections)) > longest_failed_connections:
-            longest_failed_connections = len(str(check.failed_connections))
-        if len(str(check.max_failed_connections)) > \
-                                longest_max_failed_connections:
-            longest_max_failed_connections =\
-                                    len(str(check.max_failed_connections))
+        if len(str(check.failed_since)) > longest_failed_since:
+            longest_failed_since = len(str(check.failed_since))
+        if len(str(check.max_down_time)) > \
+                                longest_max_down_time:
+            longest_max_down_time =\
+                                    len(str(check.max_down_time))
         if len(str(check.next_run)) > longest_next_run:
             longest_next_run = len(str(check.next_run))
         if len(str(check.check_frequency)) > longest_check_frequency:
@@ -390,8 +392,8 @@ def get_longest_diff():
 
     return (('url', longest_url),
         ('current_content', longest_current_content),
-        ('failed_connections', longest_failed_connections),
-        ('max_failed_connections', longest_max_failed_connections),
+        ('failed_since', longest_failed_since),
+        ('max_down_time', longest_max_down_time),
         ('next_run', longest_next_run),
         ('check_frequency', longest_check_frequency))
 
@@ -415,8 +417,8 @@ def list_checks():
         print(table_skel.format(str(check.url),
                         str(check.current_hash),
                         str(check.old_hash),
-                        str(check.failed_connections),
-                        str(check.max_failed_connections),
+                        str(check.failed_since),
+                        str(check.max_down_time),
                         str(check.next_run),
                         str(check.check_frequency)))
 
@@ -434,8 +436,8 @@ def list_checks():
         print(table_skel.format(str(check.url),
                         str(check.string_to_match),
                         str(check.present),
-                        str(check.failed_connections),
-                        str(check.max_failed_connections),
+                        str(check.failed_since),
+                        str(check.max_down_time),
                         str(check.next_run),
                         str(check.check_frequency)))
 
@@ -454,8 +456,8 @@ def list_checks():
         # write this out 3 times despite being close to having it as a function
         print(table_skel.format(str(check.url),
                             str(check.current_content),
-                            str(check.failed_connections),
-                            str(check.max_failed_connections),
+                            str(check.failed_since),
+                            str(check.max_down_time),
                             str(check.next_run),
                             str(check.check_frequency)))
 
@@ -567,7 +569,7 @@ if __name__ == '__main__':
         help='The type of check to setup and what url to check against')
     parser.add_argument('--warn-after',
         default=default_warn_after,
-        help='Number of failed network attempts to warn after')
+        help='Number of seconds a site can be down for before warning')
     parser.add_argument('--check-check_frequency',
         default=default_check_frequency,
         help='Specify the number of seconds to check after')
@@ -589,19 +591,19 @@ if __name__ == '__main__':
         url = Column(String, unique=True)
         current_hash = Column(String)
         old_hash = Column(String)
-        failed_connections = Column(Integer)
-        max_failed_connections = Column(Integer)
+        failed_since = Column(Integer)
+        max_down_time = Column(Integer)
         next_run = Column(Integer)
         check_frequency = Column(Integer)
         def __repr__(self):
             return '<url(url={}, current_hash={}, old_hash={},\
-failed_connections={}, max_failed_connections={}, next_run={},\
+failed_since={}, max_down_time={}, next_run={},\
 check_frequency={})>'.format(
                         self.url,
                         self.current_hash,
                         self.old_hash,
-                        self.failed_connections,
-                        self.max_failed_connections,
+                        self.failed_since,
+                        self.max_down_time,
                         self.next_run,
                         self.check_frequency)
 
@@ -611,19 +613,19 @@ check_frequency={})>'.format(
         url = Column(String)
         string_to_match = Column(String)
         present = Column(Integer)
-        failed_connections = Column(Integer)
-        max_failed_connections = Column(Integer)
+        failed_since = Column(Integer)
+        max_down_time = Column(Integer)
         next_run = Column(Integer)
         check_frequency = Column(Integer)
         def __repr__(self):
             return '<url(url={}, string_to_match={}, should_exist={},\
-failed_connections={}, max_failed_connections={}, next_run={},\
+failed_since={}, max_down_time={}, next_run={},\
 check_frequency={})>'.format(
                         self.url,
                         self.string_to_match,
                         self.should_exist,
-                        self.failed_connections,
-                        self.max_failed_connections,
+                        self.failed_since,
+                        self.max_down_time,
                         self.next_run,
                         self.check_frequency)
 
@@ -632,18 +634,18 @@ check_frequency={})>'.format(
         id = Column(Integer, primary_key=True)
         url = Column(String)
         current_content = Column(String)
-        failed_connections = Column(Integer)
-        max_failed_connections = Column(Integer)
+        failed_since = Column(Integer)
+        max_down_time = Column(Integer)
         next_run = Column(Integer)
         check_frequency = Column(Integer)
         def __repr__(self):
-            return '<url(url={}, current_content={}, failed_connections=\
-{}, max_failed_connections={}, next_run={},\
+            return '<url(url={}, current_content={}, failed_since=\
+{}, max_down_time={}, next_run={},\
 check_frequency={})>'.format(
                             self.url,
                             self.string_to_match,
-                            self.failed_connections,
-                            self.max_failed_connections,
+                            self.failed_since,
+                            self.max_down_time,
                             self.next_run,
                             self.check_frequency)
 
@@ -653,8 +655,8 @@ check_frequency={})>'.format(
             Column('url', String(), unique=True),
             Column('current_hash', String()),
             Column('old_hash', String()),
-            Column('failed_connections', Integer()),
-            Column('max_failed_connections', Integer()),
+            Column('failed_since', Integer()),
+            Column('max_down_time', Integer()),
             Column('next_run', Integer()),
             Column('check_frequency', Integer()),   schema=None)
 
@@ -664,8 +666,8 @@ check_frequency={})>'.format(
             Column('url', String(), unique=True),
             Column('string_to_match', String()),
             Column('present', Integer()),
-            Column('failed_connections', Integer()),
-            Column('max_failed_connections', Integer()),
+            Column('failed_since', Integer()),
+            Column('max_down_time', Integer()),
             Column('next_run', Integer()),
             Column('check_frequency', Integer()),   schema=None)
 
@@ -674,8 +676,8 @@ check_frequency={})>'.format(
             Column('id', Integer(), primary_key=True, nullable=False),
             Column('url', String(), unique=True),
             Column('current_content', String()),
-            Column('failed_connections', Integer()),
-            Column('max_failed_connections', Integer()),
+            Column('failed_since', Integer()),
+            Column('max_down_time', Integer()),
             Column('next_run', Integer()),
             Column('check_frequency', Integer()),   schema=None)
 
@@ -730,8 +732,8 @@ check_frequency={})>'.format(
     -a --add\t\tAdds a check in the database\n\t\t\t\tRequires md5/string/diff\
  url
     -d --delete\t\tDelete a check by specifying check_type url
-    --warn-after\t\tNumber of failed network attempts to warn after
-    --check-check_frequency\tSpecify the number of seconds to check after\n\t\t\t\t\
-Maybe I should call it check wavelength
+    --warn-after\t\tNumber of seconds a site can be down for before warning
+    --check-check_frequency\tSpecify the number of seconds to check after\n\
+\t\t\t\tMaybe I should call it check wavelength
     --database-location\tSpecify a database name and location
     --import-file\t\tSpecify a file to populate the database from""")
