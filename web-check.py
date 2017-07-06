@@ -55,7 +55,7 @@ def failed_connection(check, session):
 # This should not alert if the failed connections was within the warning
 # limmit - no initial message has been sent
 def check_if_failed(check, session):
-    last_run = check.next_run - check.frequency
+    last_run = check.next_run - check.check_frequency
     if last_run - check.failed_since >= check.max_down_time:
         print('Reastablished connection to {}'.format(check.url))
 
