@@ -69,6 +69,8 @@ def run_checks():
     """Perform hash, string and difference checks for all stored url's"""
     for check in session.query(MD5Check).filter(MD5Check.next_run <
                     time.time()).order_by(MD5Check.id):
+        check.next_run = time.time() + check.check_frequency
+        session.commit()
         try:
             url_content = requests.get(check.url)
         except requests.exceptions.ConnectionError:
@@ -95,11 +97,12 @@ def run_checks():
             check.old_hash = check.current_hash
             check.current_hash = new_hash
 
-        check.next_run = time.time() + check.check_frequency
         session.commit()
 
     for check in session.query(StringCheck).filter(StringCheck.next_run <
                     time.time()).order_by(StringCheck.id):
+        check.next_run = time.time() + check.check_frequency
+        session.commit()
         try:
             url_content = requests.get(check.url)
         except requests.exceptions.ConnectionError:
@@ -123,11 +126,12 @@ def run_checks():
                                                     check.url))
                 check.present = 1
 
-        check.next_run = time.time() + check.check_frequency
         session.commit()
 
     for check in session.query(DiffCheck).filter(DiffCheck.next_run <
                     time.time()).order_by(DiffCheck.id):
+        check.next_run = time.time() + check.check_frequency
+        session.commit()
         try:
             url_content = requests.get(check.url)
         except requests.exceptions.ConnectionError:
@@ -150,7 +154,6 @@ def run_checks():
                 print(line)
             check.current_content = text
 
-        check.next_run = time.time() + check.check_frequency
         session.commit()
     return ''
 
