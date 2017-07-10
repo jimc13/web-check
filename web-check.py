@@ -420,7 +420,7 @@ def list_checks():
                         str(check.failed_since),
                         str(check.max_down_time),
                         str(check.run_after),
-                        str(check.check_frequency)
+                        str(check.check_frequency),
                         str(check.check_timeout)))
 
     table_skel = '|'
@@ -439,7 +439,7 @@ def list_checks():
                             str(check.failed_since),
                             str(check.max_down_time),
                             str(check.run_after),
-                            str(check.check_frequency)
+                            str(check.check_frequency),
                             str(check.check_timeout)))
 
     return ''
