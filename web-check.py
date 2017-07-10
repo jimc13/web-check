@@ -540,7 +540,7 @@ def import_from_file(import_file):
 if __name__ == '__main__':
     default_max_down_time = 86400
     default_check_frequency = 3600
-    default_check_timeout = 5
+    default_check_timeout = 30
     default_database_location = 'web_checks.db'
     parser = argparse.ArgumentParser()
     parser.add_argument('-c', '--check', action='store_true',
