@@ -149,11 +149,28 @@ def run_checks():
         session.commit()
     return ''
 
+def validate_input(max_down_time, check_frequency, check_timeout):
+    try:
+        max_down_time, check_frequency, check_timeout = int(max_down_time),\
+        int(check_frequency), int(check_timeout)
+    except:
+        print('max_down_time, check_frequency and check_timeout must be\
+integer\'s')
+        exit(1)
+
+    if not check_timeout > 0:
+        print('check-timeout must be greater than 0')
+        exit(1)
+
+    return (max_down_time, check_frequency, check_timeout)
+
 def add_md5(url, max_down_time, check_frequency, check_timeout):
     """
     Add a database entry for a url to monitor the md5 hash of.  Returns message
     relating to success.
     """
+    max_down_time, check_frequency, check_timeout = validate_input(
+        max_down_time, check_frequency, check_timeout)
     try:
         url_content = requests.get(url, timeout=check_timeout)
     except requests.exceptions.ConnectionError:
@@ -191,6 +208,8 @@ def add_string(url, string, max_down_time, check_frequency, check_timeout):
     Add a database entry for a url to monitor for a string.  Returns message
     relating to success.
     """
+    max_down_time, check_frequency, check_timeout = validate_input(
+        max_down_time, check_frequency, check_timeout)
     try:
         url_content = requests.get(url, timeout=check_timeout)
     except requests.exceptions.ConnectionError:
@@ -236,6 +255,8 @@ def add_diff(url, max_down_time, check_frequency, check_timeout):
     Add a database entry for a url to monitor for any text changes.
     Returns message relating to success.
     """
+    max_down_time, check_frequency, check_timeout = validate_input(
+        max_down_time, check_frequency, check_timeout)
     try:
         url_content = requests.get(url, timeout=check_timeout)
     except requests.exceptions.ConnectionError:
@@ -492,8 +513,8 @@ def import_from_file(import_file):
                 else:
                     url = data
 
-                print(add_md5(url, int(max_down_time), int(check_frequency),
-                        int(check_timeout)))
+                print(add_md5(url, max_down_time, check_frequency,
+                        check_timeout))
             elif check_type == 'string':
                 # There are two accepted line formats:
                 # check_type|url|string_to_check|max_down_time|check_frequency
@@ -513,8 +534,8 @@ def import_from_file(import_file):
                 else:
                     url = data
 
-                print(add_string(url, string_to_check, (max_down_time),
-                        int(check_frequency), int(check_timeout)))
+                print(add_string(url, string_to_check, max_down_time,
+                        check_frequency, check_timeout))
             elif check_type == 'diff':
                 # There are two accepted line formats:
                 # check_type|url|max_down_time|check_frequency|check_timeout
@@ -529,8 +550,8 @@ def import_from_file(import_file):
                 else:
                     url = data
 
-                print(add_diff(url, int(max_down_time), int(check_frequency),
-                        int(check_timeout)))
+                print(add_diff(url, max_down_time, check_frequency,
+                        check_timeout))
             else:
                 return error_message.format(line)
 
