@@ -42,21 +42,21 @@ def failed_connection(check, session):
     current_time = time.time()
     if not check.failed_since:
         check.failed_since = current_time
+        session.commit()
     if current_time - check.failed_since >= check.max_down_time:
         print('Warning: Can\'t connect to {}'.format(check.url))
 
-    session.commit()
     return ''
 
 def check_if_recovered(check, session):
     if not check.failed_since:
         return ''
+    check.failed_since = 0
+    session.commit()
     last_run = check.run_after - check.check_frequency
     if last_run - check.failed_since >= check.max_down_time:
         print('Reastablished connection to {}'.format(check.url))
 
-    check.failed_since = 0
-    session.commit()
     return ''
 
 def run_checks():
@@ -90,8 +90,7 @@ def run_checks():
 
             check.old_hash = check.current_hash
             check.current_hash = new_hash
-
-        session.commit()
+            session.commit()
 
     for check in session.query(StringCheck).filter(StringCheck.run_after <
                     time.time()).order_by(StringCheck.id):
@@ -120,7 +119,7 @@ def run_checks():
                                                     check.url))
                 check.present = 1
 
-        session.commit()
+            session.commit()
 
     for check in session.query(DiffCheck).filter(DiffCheck.run_after <
                     time.time()).order_by(DiffCheck.id):
@@ -139,14 +138,14 @@ def run_checks():
         check_if_recovered(check, session)
         text = get_text(url_content.text)
         if text != check.current_content:
-            for line in difflib.context_diff(check.current_content.split('\n'),
-                            text.split('\n'),
-                            fromfile='Stored content for {}'.format(check.url),
-                            tofile='New content for {}'.format(check.url)):
+            for line in difflib.context_diff(text.split('\n'),
+                            check.current_content.split('\n'),
+                            fromfile='New content for {}'.format(check.url),
+                            tofile='Old content for {}'.format(check.url)):
                 print(line)
             check.current_content = text
+            session.commit()
 
-        session.commit()
     return ''
 
 def validate_input(max_down_time, check_frequency, check_timeout):
