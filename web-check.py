@@ -311,7 +311,7 @@ def get_longest_md5():
     longest_old_hash = 8
     longest_failed_since = 12
     longest_max_down_time = 14
-    longest_run_after = 8
+    longest_run_after = 9
     longest_check_frequency = 15
     longest_check_timeout = 13
     for check in session.query(MD5Check).order_by(MD5Check.id):
@@ -349,7 +349,7 @@ def get_longest_string():
     longest_present = 7
     longest_failed_since = 12
     longest_max_down_time = 14
-    longest_run_after = 8
+    longest_run_after = 9
     longest_check_frequency = 15
     longest_check_timeout = 13
     for check in session.query(StringCheck).order_by(StringCheck.id):
