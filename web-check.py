@@ -66,7 +66,7 @@ def run_checks():
         check.run_after = time.time() + check.check_frequency
         session.commit()
         try:
-            url_content = requests.get(check.url, timeout=check.timeout)
+            url_content = requests.get(check.url, timeout=check.check_timeout)
         except requests.exceptions.ConnectionError:
             failed_connection(check, session)
             continue
@@ -98,7 +98,7 @@ def run_checks():
         check.run_after = time.time() + check.check_frequency
         session.commit()
         try:
-            url_content = requests.get(check.url, timeout=check.timeout)
+            url_content = requests.get(check.url, timeout=check.check_timeout)
         except requests.exceptions.ConnectionError:
             failed_connection(check, session)
             continue
@@ -127,7 +127,7 @@ def run_checks():
         check.run_after = time.time() + check.check_frequency
         session.commit()
         try:
-            url_content = requests.get(check.url, timeout=check.timeout)
+            url_content = requests.get(check.url, timeout=check.check_timeout)
         except requests.exceptions.ConnectionError:
             failed_connection(check, session)
             continue
@@ -149,13 +149,13 @@ def run_checks():
         session.commit()
     return ''
 
-def add_md5(url, max_down_time, check_frequency, timeout):
+def add_md5(url, max_down_time, check_frequency, check_timeout):
     """
     Add a database entry for a url to monitor the md5 hash of.  Returns message
     relating to success.
     """
     try:
-        url_content = requests.get(url, timeout=timeout)
+        url_content = requests.get(url, timeout=check_timeout)
     except requests.exceptions.ConnectionError:
         return 'Error: Could not connect to chosen url {}'.format(url)
     except requests.exceptions.MissingSchema as e:
@@ -176,7 +176,7 @@ def add_md5(url, max_down_time, check_frequency, timeout):
                 max_down_time=max_down_time,
                 run_after=0,
                 check_frequency=check_frequency,
-                timeout=timeout)
+                check_timeout=check_timeout)
     session.add(check)
     try:
         session.commit()
@@ -186,13 +186,13 @@ def add_md5(url, max_down_time, check_frequency, timeout):
     else:
         return 'Added MD5 Check for {}'.format(url)
 
-def add_string(url, string, max_down_time, check_frequency, timeout):
+def add_string(url, string, max_down_time, check_frequency, check_timeout):
     """
     Add a database entry for a url to monitor for a string.  Returns message
     relating to success.
     """
     try:
-        url_content = requests.get(url, timeout=timeout)
+        url_content = requests.get(url, timeout=check_timeout)
     except requests.exceptions.ConnectionError:
         return 'Error: Could not connect to chosen url {}'.format(url)
     except requests.exceptions.MissingSchema as e:
@@ -214,7 +214,7 @@ def add_string(url, string, max_down_time, check_frequency, timeout):
                     max_down_time=max_down_time,
                     run_after= 0,
                     check_frequency=check_frequency,
-                    timeout=timeout)
+                    check_timeout=check_timeout)
     session.add(check)
     try:
         session.commit()
@@ -231,13 +231,13 @@ def add_string(url, string, max_down_time, check_frequency, timeout):
 
         return 'Added String Check for {}'.format(url)
 
-def add_diff(url, max_down_time, check_frequency, timeout):
+def add_diff(url, max_down_time, check_frequency, check_timeout):
     """
     Add a database entry for a url to monitor for any text changes.
     Returns message relating to success.
     """
     try:
-        url_content = requests.get(url, timeout=timeout)
+        url_content = requests.get(url, timeout=check_timeout)
     except requests.exceptions.ConnectionError:
         return 'Error: Could not connect to chosen url {}'.format(url)
     except requests.exceptions.MissingSchema as e:
@@ -254,7 +254,7 @@ def add_diff(url, max_down_time, check_frequency, timeout):
                     max_down_time=max_down_time,
                     run_after=0,
                     check_frequency=check_frequency,
-                    timeout=timeout)
+                    check_timeout=check_timeout)
     session.add(check)
     try:
         session.commit()
@@ -272,7 +272,7 @@ def get_longest_md5():
     longest_max_down_time = 14
     longest_run_after = 8
     longest_check_frequency = 15
-    longest_timeout = 13
+    longest_check_timeout = 13
     for check in session.query(MD5Check).order_by(MD5Check.id):
         if len(str(check.url)) > longest_url:
             longest_url = len(str(check.url))
@@ -290,8 +290,8 @@ def get_longest_md5():
             longest_run_after = len(str(check.run_after))
         if len(str(check.check_frequency)) > longest_check_frequency:
             longest_check_frequency = len(str(check.check_frequency))
-        if len(str(check.timeout)) > longest_timeout:
-            longest_timeout = len(str(check.timeout))
+        if len(str(check.check_timeout)) > longest_check_timeout:
+            longest_check_timeout = len(str(check.check_timeout))
 
     return (('url', longest_url),
         ('current_hash', longest_current_hash),
@@ -300,7 +300,7 @@ def get_longest_md5():
         ('max_down_time', longest_max_down_time),
         ('run_after', longest_run_after),
         ('check_frequency', longest_check_frequency),
-        ('timeout', longest_timeout))
+        ('check_timeout', longest_check_timeout))
 
 def get_longest_string():
     longest_url = 3
@@ -310,7 +310,7 @@ def get_longest_string():
     longest_max_down_time = 14
     longest_run_after = 8
     longest_check_frequency = 15
-    longest_timeout = 13
+    longest_check_timeout = 13
     for check in session.query(StringCheck).order_by(StringCheck.id):
         if len(str(check.url)) > longest_url:
             longest_url = len(str(check.url))
@@ -328,8 +328,8 @@ def get_longest_string():
             longest_run_after = len(str(check.run_after))
         if len(str(check.check_frequency)) > longest_check_frequency:
             longest_check_frequency = len(str(check.check_frequency))
-        if len(str(check.timeout)) > longest_timeout:
-            longest_timeout = len(str(check.timeout))
+        if len(str(check.check_timeout)) > longest_check_timeout:
+            longest_check_timeout = len(str(check.check_timeout))
 
     return (('url', longest_url),
         ('string_to_match', longest_string_to_match),
@@ -338,7 +338,7 @@ def get_longest_string():
         ('max_down_time', longest_max_down_time),
         ('run_after', longest_run_after),
         ('check_frequency', longest_check_frequency),
-        ('timeout', longest_timeout))
+        ('check_timeout', longest_check_timeout))
 
 def get_longest_diff():
     """
@@ -350,7 +350,7 @@ def get_longest_diff():
     longest_max_down_time = 14
     longest_run_after = 9
     longest_check_frequency = 15
-    longest_timeout = 13
+    longest_check_timeout = 13
     for check in session.query(DiffCheck).order_by(DiffCheck.id):
         if len(str(check.url)) > longest_url:
             longest_url = len(str(check.url))
@@ -368,8 +368,8 @@ def get_longest_diff():
             longest_run_after = len(str(check.run_after))
         if len(str(check.check_frequency)) > longest_check_frequency:
             longest_check_frequency = len(str(check.check_frequency))
-        if len(str(check.timeout)) > longest_timeout:
-            longest_timeout = len(str(check.timeout))
+        if len(str(check.check_timeout)) > longest_check_timeout:
+            longest_check_timeout = len(str(check.check_timeout))
 
     return (('url', longest_url),
         ('current_content', longest_current_content),
@@ -377,7 +377,7 @@ def get_longest_diff():
         ('max_down_time', longest_max_down_time),
         ('run_after', longest_run_after),
         ('check_frequency', longest_check_frequency),
-        ('timeout', longest_timeout))
+        ('check_timeout', longest_check_timeout))
 
 def list_checks():
     """
@@ -401,7 +401,7 @@ def list_checks():
                         str(check.max_down_time),
                         str(check.run_after),
                         str(check.check_frequency),
-                        str(check.timeout)))
+                        str(check.check_timeout)))
 
     table_skel = '|'
     columns = []
@@ -421,7 +421,7 @@ def list_checks():
                         str(check.max_down_time),
                         str(check.run_after),
                         str(check.check_frequency),
-                        str(check.timeout)))
+                        str(check.check_timeout)))
 
     table_skel = '|'
     columns = []
@@ -440,7 +440,7 @@ def list_checks():
                             str(check.max_down_time),
                             str(check.run_after),
                             str(check.check_frequency),
-                            str(check.timeout)))
+                            str(check.check_timeout)))
 
     return ''
 
@@ -477,14 +477,14 @@ def import_from_file(import_file):
 
             max_down_time = default_max_down_time
             check_frequency = default_check_frequency
-            timeout = default_timeout
+            check_timeout = default_check_timeout
             if check_type == 'md5':
                 # There are two accepted line formats:
-                # check_type|url|max_down_time|check_frequency|timeout
+                # check_type|url|max_down_time|check_frequency|check_timeout
                 # and check_type|url
                 if '|' in data:
                     try:
-                        url, max_down_time, check_frequency, timeout\
+                        url, max_down_time, check_frequency, check_timeout\
                         = data.split('|')
                     except ValueError:
                         return error_message.format(line)
@@ -492,12 +492,12 @@ def import_from_file(import_file):
                 else:
                     url = data
 
-                print(add_md5(url, max_down_time, check_frequency,
-                        timeout))
+                print(add_md5(url, int(max_down_time), int(check_frequency),
+                        int(check_timeout)))
             elif check_type == 'string':
                 # There are two accepted line formats:
                 # check_type|url|string_to_check|max_down_time|check_frequency
-                # |timeout
+                # |check_timeout
                 # and check_type|url
                 try:
                     string_to_check, data = data.split('|', 1)
@@ -505,7 +505,7 @@ def import_from_file(import_file):
                     return error_message.format(line)
                 if '|' in data:
                     try:
-                        url, max_down_time, check_frequency, timeout\
+                        url, max_down_time, check_frequency, check_timeout\
                         = data.split('|')
                     except ValueError:
                         return error_message.format(line)
@@ -513,15 +513,15 @@ def import_from_file(import_file):
                 else:
                     url = data
 
-                print(add_string(url, string_to_check, max_down_time,
-                        check_frequency, timeout))
+                print(add_string(url, string_to_check, (max_down_time),
+                        int(check_frequency), int(check_timeout)))
             elif check_type == 'diff':
                 # There are two accepted line formats:
-                # check_type|url|max_down_time|check_frequency|timeout
+                # check_type|url|max_down_time|check_frequency|check_timeout
                 # and check_type|url
                 if '|' in data:
                     try:
-                        url, max_down_time, check_frequency, timeout\
+                        url, max_down_time, check_frequency, check_timeout\
                         = data.split('|')
                     except ValueError:
                         return error_message.format(line)
@@ -529,8 +529,8 @@ def import_from_file(import_file):
                 else:
                     url = data
 
-                print(add_diff(url, max_down_time, check_frequency,
-                        timeout))
+                print(add_diff(url, int(max_down_time), int(check_frequency),
+                        int(check_timeout)))
             else:
                 return error_message.format(line)
 
@@ -540,7 +540,7 @@ def import_from_file(import_file):
 if __name__ == '__main__':
     default_max_down_time = 86400
     default_check_frequency = 3600
-    default_timeout = 5
+    default_check_timeout = 5
     default_database_location = 'web_checks.db'
     parser = argparse.ArgumentParser()
     parser.add_argument('-c', '--check', action='store_true',
@@ -557,9 +557,9 @@ if __name__ == '__main__':
     parser.add_argument('--check-frequency', type=int,
         default=default_check_frequency,
         help='Specify the number of seconds to check after')
-    parser.add_argument('--timeout', type=int,
-        default=default_timeout,
-        help='Specify the number of seconds to timeout after')
+    parser.add_argument('--check-timeout', type=int,
+        default=default_check_timeout,
+        help='Specify the number of seconds to check_timeout after')
     parser.add_argument('--database-location',
         default=default_database_location,
         help='Specify a database name and location')
@@ -583,11 +583,11 @@ if __name__ == '__main__':
         max_down_time = Column(Integer)
         run_after = Column(Integer)
         check_frequency = Column(Integer)
-        timeout = Column(Integer)
+        check_timeout = Column(Integer)
         def __repr__(self):
             return '<url(url={}, current_hash={}, old_hash={},\
 failed_since={}, max_down_time={}, run_after={},\
-check_frequency={}, timeout{})>'.format(
+check_frequency={}, check_timeout{})>'.format(
                         self.url,
                         self.current_hash,
                         self.old_hash,
@@ -595,7 +595,7 @@ check_frequency={}, timeout{})>'.format(
                         self.max_down_time,
                         self.run_after,
                         self.check_frequency,
-                        self.timeout)
+                        self.check_timeout)
 
     class StringCheck(Base):
         __tablename__ = 'strings'
@@ -607,11 +607,11 @@ check_frequency={}, timeout{})>'.format(
         max_down_time = Column(Integer)
         run_after = Column(Integer)
         check_frequency = Column(Integer)
-        timeout = Column(Integer)
+        check_timeout = Column(Integer)
         def __repr__(self):
             return '<url(url={}, string_to_match={}, should_exist={},\
 failed_since={}, max_down_time={}, run_after={},\
-check_frequency={}, timeout{})>'.format(
+check_frequency={}, check_timeout{})>'.format(
                         self.url,
                         self.string_to_match,
                         self.should_exist,
@@ -619,7 +619,7 @@ check_frequency={}, timeout{})>'.format(
                         self.max_down_time,
                         self.run_after,
                         self.check_frequency,
-                        self.timeout)
+                        self.check_timeout)
 
     class DiffCheck(Base):
         __tablename__ = 'diffs'
@@ -630,7 +630,7 @@ check_frequency={}, timeout{})>'.format(
         max_down_time = Column(Integer)
         run_after = Column(Integer)
         check_frequency = Column(Integer)
-        timeout = Column(Integer)
+        check_timeout = Column(Integer)
         def __repr__(self):
             return '<url(url={}, current_content={}, failed_since=\
 {}, max_down_time={}, run_after={},\
@@ -641,7 +641,7 @@ check_frequency={})>'.format(
                             self.max_down_time,
                             self.run_after,
                             self.check_frequency,
-                            self.timeout)
+                            self.check_timeout)
 
     MD5Check.__table__
     Table('md5s', metadata,
@@ -653,7 +653,7 @@ check_frequency={})>'.format(
             Column('max_down_time', Integer()),
             Column('run_after', Integer()),
             Column('check_frequency', Integer()),
-            Column('timeout', Integer()),   schema=None)
+            Column('check_timeout', Integer()),   schema=None)
 
     StringCheck.__table__
     Table('strings', metadata,
@@ -665,7 +665,7 @@ check_frequency={})>'.format(
             Column('max_down_time', Integer()),
             Column('run_after', Integer()),
             Column('check_frequency', Integer()),
-            Column('timeout', Integer()),   schema=None)
+            Column('check_timeout', Integer()),   schema=None)
 
     DiffCheck.__table__
     Table('diffs', metadata,
@@ -676,7 +676,7 @@ check_frequency={})>'.format(
             Column('max_down_time', Integer()),
             Column('run_after', Integer()),
             Column('check_frequency', Integer()),
-            Column('timeout', Integer()),   schema=None)
+            Column('check_timeout', Integer()),   schema=None)
 
     try:
         metadata.create_all(engine)
@@ -699,21 +699,21 @@ check_frequency={})>'.format(
                 exit(1)
 
             print(add_md5(args.add[1], args.max_down_time, args.check_frequency,
-                        args.timeout))
+                        args.check_timeout))
         elif args.add[0] == 'string':
             if len(args.add) != 3:
                 print('call as -a \'string\' string-to-check \'url-to-check\'')
                 exit(1)
 
             print(add_string(args.add[2], args.add[1], args.max_down_time,
-                    args.check_frequency, args.timeout))
+                    args.check_frequency, args.check_timeout))
         elif args.add[0] == 'diff':
             if len(args.add) != 2:
                 print('call as -a \'diff\' \'url-to-check\'')
                 exit(1)
 
             print(add_diff(args.add[1], args.max_down_time,
-                    args.check_frequency, args.timeout))
+                    args.check_frequency, args.check_timeout))
         else:
             print('Choose either md5, string or diff.')
 
@@ -742,7 +742,7 @@ Arguments:
   \t\t\t\t-d [check_type] [url]
   --max-down-time\t\tNumber of seconds a site can be down for before warning
   --check-frequency\tNumber of seconds to wait between checks
-  --timeout\t\tNumber of seconds to timeout after
+  --check-timeout\t\tNumber of seconds to check_timeout after
   --database-location\tSpecify a database name and location
   --import-file\t\tSpecify a file to populate the database from\
   """)
