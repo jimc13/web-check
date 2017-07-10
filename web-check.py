@@ -160,21 +160,25 @@ def validate_input(max_down_time, check_frequency, check_timeout):
     try:
         max_down_time = int(max_down_time)
     except ValueError:
-        print('Error: max_down_time {} given, must be an integer')
+        print('Error: max_down_time {} given, must be an integer').format(
+                                                                max_down_time)
 
     try:
         check_frequency = int(check_frequency)
     except ValueError:
-        print('Error: check_frequency {} given, must be an integer')
+        print('Error: check_frequency {} given, must be an integer').format(
+                                                                check_frequency)
 
     try:
         check_timeout = int(check_timeout)
     except ValueError:
-        print('Error: check_timeout {} given, must be an integer')
+        print('Error: check_timeout {} given, must be an integer').format(
+                                                                check_timeout)
         exit(1)
 
     if not check_timeout > 0:
-        print('Error: check-timeout {} given, must be greater than 0')
+        print('Error: check-timeout {} given, must be greater than 0').format(
+                                                                check_timeout)
         exit(1)
 
     return (max_down_time, check_frequency, check_timeout)
