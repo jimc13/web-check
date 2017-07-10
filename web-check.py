@@ -299,7 +299,7 @@ def get_longest_md5():
         ('failed_since', longest_failed_since),
         ('max_down_time', longest_max_down_time),
         ('run_after', longest_run_after),
-        ('check_frequency', longest_check_frequency)
+        ('check_frequency', longest_check_frequency),
         ('check_timeout', longest_check_timeout))
 
 def get_longest_string():
@@ -337,7 +337,7 @@ def get_longest_string():
         ('failed_since', longest_failed_since),
         ('max_down_time', longest_max_down_time),
         ('run_after', longest_run_after),
-        ('check_frequency', longest_check_frequency)
+        ('check_frequency', longest_check_frequency),
         ('check_timeout', longest_check_timeout))
 
 def get_longest_diff():
@@ -376,7 +376,7 @@ def get_longest_diff():
         ('failed_since', longest_failed_since),
         ('max_down_time', longest_max_down_time),
         ('run_after', longest_run_after),
-        ('check_frequency', longest_check_frequency)
+        ('check_frequency', longest_check_frequency),
         ('check_timeout', longest_check_timeout))
 
 def list_checks():
