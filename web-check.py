@@ -175,7 +175,7 @@ def add_md5(url, max_down_time, check_frequency, check_timeout):
                 failed_since=0,
                 max_down_time=max_down_time,
                 run_after=0,
-                check_frequency=check_frequency
+                check_frequency=check_frequency,
                 check_timeout=check_timeout)
     session.add(check)
     try:
@@ -213,7 +213,7 @@ def add_string(url, string, max_down_time, check_frequency, check_timeout):
                     failed_since=0,
                     max_down_time=max_down_time,
                     run_after= 0,
-                    check_frequency=check_frequency
+                    check_frequency=check_frequency,
                     check_timeout=check_timeout)
     session.add(check)
     try:
@@ -253,7 +253,7 @@ def add_diff(url, max_down_time, check_frequency, check_timeout):
                     failed_since=0,
                     max_down_time=max_down_time,
                     run_after=0,
-                    check_frequency=check_frequency
+                    check_frequency=check_frequency,
                     check_timeout=check_timeout)
     session.add(check)
     try:
