@@ -150,16 +150,31 @@ def run_checks():
     return ''
 
 def validate_input(max_down_time, check_frequency, check_timeout):
+    """
+    Check's integers are given and that check_timeout is positive.
+
+    Negative max_down_time and check_frequency values have no purpose but are
+    still a valid input.  The check would run each time the script is called and
+    alert if a connection failed, values of 0 will have the same effect.
+    """
     try:
-        max_down_time, check_frequency, check_timeout = int(max_down_time),\
-        int(check_frequency), int(check_timeout)
-    except:
-        print('max_down_time, check_frequency and check_timeout must be\
-integer\'s')
+        max_down_time = int(max_down_time)
+    except ValueError:
+        print('Error: max_down_time {} given, must be an integer')
+
+    try:
+        check_frequency = int(check_frequency)
+    except ValueError:
+        print('Error: check_frequency {} given, must be an integer')
+
+    try:
+        check_timeout = int(check_timeout)
+    except ValueError:
+        print('Error: check_timeout {} given, must be an integer')
         exit(1)
 
     if not check_timeout > 0:
-        print('check-timeout must be greater than 0')
+        print('Error: check-timeout {} given, must be greater than 0')
         exit(1)
 
     return (max_down_time, check_frequency, check_timeout)
