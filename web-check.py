@@ -521,7 +521,7 @@ def import_from_file(import_file):
                 # and check_type|url
                 if '|' in data:
                     try:
-                        url, max_down_time, check_frequency check_timeout\
+                        url, max_down_time, check_frequency, check_timeout\
                         = data.split('|')
                     except ValueError:
                         return error_message.format(line)
