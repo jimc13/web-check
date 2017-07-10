@@ -138,10 +138,10 @@ def run_checks():
         check_if_recovered(check, session)
         text = get_text(url_content.text)
         if text != check.current_content:
-            for line in difflib.context_diff(text.split('\n'),
-                            check.current_content.split('\n'),
-                            fromfile='New content for {}'.format(check.url),
-                            tofile='Old content for {}'.format(check.url)):
+            for line in difflib.context_diff(check.current_content.split('\n'),
+                            text.split('\n'),
+                            fromfile='Old content for {}'.format(check.url),
+                            tofile='New content for {}'.format(check.url)):
                 print(line)
             check.current_content = text
             session.commit()
