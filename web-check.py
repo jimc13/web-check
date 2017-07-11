@@ -986,8 +986,7 @@ check_frequency={}, check_timeout{})>'.format(
 
             print(add_diff(args.add[1], args.max_down_time,
                     args.check_frequency, args.check_timeout))
-        elif:
-            args.add[0] == 'raw':
+        elif args.add[0] == 'raw':
             if len(args.add) != 3:
                 print('call as -a \'raw\' expression \'url-to-check\'')
                 exit(1)
