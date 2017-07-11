@@ -639,7 +639,7 @@ def list_checks():
     table_skel = '|'
     columns = []
     arguments = []
-    for column, longest_entry in get_longest_diff():
+    for column, longest_entry in get_longest_raw():
         table_skel += (' {{: <{}}} |'.format(longest_entry))
         columns.append(column)
         arguments.append('row.{}'.format(column))
