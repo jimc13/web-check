@@ -988,10 +988,10 @@ check_frequency={}, check_timeout{})>'.format(
                     args.check_frequency, args.check_timeout))
         elif args.add[0] == 'raw':
             if len(args.add) != 3:
-                print('call as -a \'raw\' expression \'url-to-check\'')
+                print('call as -a \'raw\' \'expression\' \'url-to-check\'')
                 exit(1)
 
-            print(add_string(args.add[2], args.add[1], args.max_down_time,
+            print(add_raw(args.add[2], args.add[1], args.max_down_time,
                     args.check_frequency, args.check_timeout))
         else:
             print('Choose either md5, string, diff or raw.')
