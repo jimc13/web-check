@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 try:
     import sys
+    import re
     import argparse
     import time
     import requests
@@ -20,7 +21,7 @@ pip install -r requirements.txt""")
 
 def get_text(html):
     """
-    Input html bytes.  Returns utf-8 markdown without links
+    Input html.  Returns utf-8 markdown without links
 
     requests.get().text will be used as the input data
     html2text will be used to remove most of the changing parts of the response
@@ -34,7 +35,7 @@ def get_text(html):
 
 def get_md5(html):
     """
-    Input html bytes. Returns MD5 hash.
+    Input html. Returns MD5 hash of the text.
     """
     return hashlib.md5(get_text(html).encode('utf-8')).hexdigest()
 
@@ -60,7 +61,7 @@ def check_if_recovered(check, session):
     return ''
 
 def run_checks():
-    """Perform hash, string and difference checks for all stored url's"""
+    """Perform hash, string, difference and raw checks for all stored url's"""
     for check in session.query(MD5Check).filter(MD5Check.run_after <
                     time.time()).order_by(MD5Check.id):
         check.run_after = time.time() + check.check_frequency
@@ -145,6 +146,58 @@ def run_checks():
                 print(line)
             check.current_content = text
             session.commit()
+
+    for check in session.query(RawCheck).filter(RawCheck.run_after <
+                    time.time()).order_by(RawCheck.id):
+        check.run_after = time.time() + check.check_frequency
+        session.commit()
+        try:
+            url_content = requests.get(check.url, timeout=check.check_timeout)
+        except requests.exceptions.ConnectionError:
+            failed_connection(check, session)
+            continue
+
+        if url_content.status_code != 200:
+            failed_connection(check, session)
+            continue
+
+        check_if_recovered(check, session)
+        try:
+            new_hash = hashlib.md5(url_content.text.encode('utf-8')).hexdigest()
+        except:
+            print('Error: Failed to hash response from {}'.format(check.url))
+            continue
+
+        if new_hash == check.current_hash:
+            continue
+
+        check.old_hash = check.current_hash
+        session.commit()
+        try:
+            m = re.search(expression.encode('unicode-escape'),
+                        url_content.text, re.S)
+        except sre_constants.error as e:
+            print('Error: invalid regular expression: {}'.format(e))
+            continue
+
+        try:
+            capture_groups = m.groups()
+        except AttributeError:
+            print('Error: no matches for regular exprssion on {}'.format(url))
+
+        if capture_group == check.capture_group:
+            continue
+
+        print('RawCheck with expression {} changed for {}').format(
+                                                            check.expression,
+                                                            check.url)
+        for count, capture_group in enumerate(capture_groups):
+            if capture_group != check.capture_groups[count]:
+                print('{} has been changed to {}'.format(capture_group,
+                                                check.capture_groups[count]))
+
+        check.capture_groups = capture_groups
+        session.commit()
 
     return ''
 
@@ -305,6 +358,63 @@ def add_diff(url, max_down_time, check_frequency, check_timeout):
     else:
         return 'Added Diff Check for {}'.format(url)
 
+def add_raw(url, expression, max_down_time, check_frequency, check_timeout):
+    """
+    Add a database entry for a url to monitor for a change using regex.
+    Returns message relating to success.
+    """
+    max_down_time, check_frequency, check_timeout = validate_input(
+        max_down_time, check_frequency, check_timeout)
+    try:
+        url_content = requests.get(url, timeout=check_timeout)
+    except requests.exceptions.ConnectionError:
+        return 'Error: Could not connect to chosen url {}'.format(url)
+    except requests.exceptions.MissingSchema as e:
+        return e
+    except requests.exceptions.InvalidSchema as e:
+        return e
+
+    if url_content.status_code != 200:
+        return 'Error: {} code from server'.format(url_content.status_code)
+
+    try:
+        # Not sure if I want to hash .text.encode('utf-8') or .content
+        current_hash = hashlib.md5(url_content.text.encode('utf-8')).hexdigest()
+    except:
+        return 'Error: Failed to hash response from {}'.format(url)
+
+    try:
+        m = re.search(expression.encode('unicode-escape'),
+                    url_content.text, re.S)
+    except sre_constants.error as e:
+        return 'Error: invalid regular expression: {}'.format(e)
+
+    try:
+        capture_groups = m.groups()
+    except AttributeError:
+        return 'Error: no matches for regular exprssion on {}'.format(url)
+
+    for capture_group in capture_groups:
+        print('{} matched, will alert if this changes'.format(capture_group))
+
+    check = RawCheck(url=url,
+                expression=expression,
+                current_hash=current_hash,
+                capture_groups=capture_groups,
+                failed_since=0,
+                max_down_time=max_down_time,
+                run_after=0,
+                check_frequency=check_frequency,
+                check_timeout=check_timeout)
+    session.add(check)
+    try:
+        session.commit()
+    except sqlalchemy.exc.IntegrityError:
+        session.rollback()
+        return 'Error: An entry for {} is already in database'.format(url)
+    else:
+        return 'Added Raw Check for {}'.format(url)
+
 def get_longest_md5():
     longest_url = 3
     longest_current_hash = 12
@@ -420,6 +530,50 @@ def get_longest_diff():
         ('check_frequency', longest_check_frequency),
         ('check_timeout', longest_check_timeout))
 
+def get_longest_raw():
+    longest_url = 3
+    longest_expression = 10
+    longest_current_hash = 12
+    longest_capture_groups = 14
+    longest_failed_since = 12
+    longest_max_down_time = 14
+    longest_run_after = 9
+    longest_check_frequency = 15
+    longest_check_timeout = 13
+    for check in session.query(StringCheck).order_by(StringCheck.id):
+        if len(str(check.url)) > longest_url:
+            longest_url = len(str(check.url))
+        if len(str(check.exprssion)) > longest_expression:
+            longest_expression = len(str(check.exprssion))
+        if len(str(check.current_hash)) > longest_current_hash:
+            longest_current_hash = len(str(check.current_hash))
+        if len(str(check.capture_groups)) > longest_capture_groups:
+            longest_capture_groups = len(str(check.capture_groups))
+        if len(str(check.present)) > longest_present:
+            longest_present = len(str(check.present))
+        if len(str(check.failed_since)) > longest_failed_since:
+            longest_failed_since = len(str(check.failed_since))
+        if len(str(check.max_down_time)) > \
+                                longest_max_down_time:
+            longest_max_down_time =\
+                                    len(str(check.max_down_time))
+        if len(str(check.run_after)) > longest_run_after:
+            longest_run_after = len(str(check.run_after))
+        if len(str(check.check_frequency)) > longest_check_frequency:
+            longest_check_frequency = len(str(check.check_frequency))
+        if len(str(check.check_timeout)) > longest_check_timeout:
+            longest_check_timeout = len(str(check.check_timeout))
+
+    return (('url', longest_url),
+        ('expression', longest_expression),
+        ('current_hash', longest_current_hash),
+        ('capture_groups', longest_capture_groups),
+        ('failed_since', longest_failed_since),
+        ('max_down_time', longest_max_down_time),
+        ('run_after', longest_run_after),
+        ('check_frequency', longest_check_frequency),
+        ('check_timeout', longest_check_timeout))
+
 def list_checks():
     """
     List all of the checks from the database in a table like format.
@@ -483,6 +637,27 @@ def list_checks():
                             str(check.check_frequency),
                             str(check.check_timeout)))
 
+    table_skel = '|'
+    columns = []
+    arguments = []
+    for column, longest_entry in get_longest_diff():
+        table_skel += (' {{: <{}}} |'.format(longest_entry))
+        columns.append(column)
+        arguments.append('row.{}'.format(column))
+
+    print('{} Checks:'.format('RawCheck'))
+    print(table_skel.format(*columns))
+    for check in session.query(RawCheck).order_by(RawCheck.id):
+        print(table_skel.format(str(check.url),
+                            str(check.expression),
+                            str(check.current_hash),
+                            str(check.capture_groups),
+                            str(check.failed_since),
+                            str(check.max_down_time),
+                            str(check.run_after),
+                            str(check.check_frequency),
+                            str(check.check_timeout)))
+
     return ''
 
 def delete_check(check_type, url):
@@ -493,7 +668,7 @@ def delete_check(check_type, url):
     elif check_type == 'diff':
         check = session.query(DiffCheck).filter(DiffCheck.url == url)
     else:
-        return 'Chose either md5, string or diff check'
+        return 'Chose either md5, string, diff or raw check'
 
     if check.delete():
         session.commit()
@@ -572,6 +747,23 @@ def import_from_file(import_file):
 
                 print(add_diff(url, max_down_time, check_frequency,
                         check_timeout))
+            elif check_type == 'raw':
+                try:
+                    expression, data = data.split('|', 1)
+                except ValueError:
+                    return error_message.format(line)
+                if '|' in data:
+                    try:
+                        url, max_down_time, check_frequency, check_timeout\
+                        = data.split('|')
+                    except ValueError:
+                        return error_message.format(line)
+
+                else:
+                    url = data
+
+                print(add_raw(url, expression, max_down_time,
+                        check_frequency, check_timeout))
             else:
                 return error_message.format(line)
 
@@ -650,12 +842,12 @@ check_frequency={}, check_timeout{})>'.format(
         check_frequency = Column(Integer)
         check_timeout = Column(Integer)
         def __repr__(self):
-            return '<url(url={}, string_to_match={}, should_exist={},\
+            return '<url(url={}, string_to_match={}, present={},\
 failed_since={}, max_down_time={}, run_after={},\
 check_frequency={}, check_timeout{})>'.format(
                         self.url,
                         self.string_to_match,
-                        self.should_exist,
+                        self.present,
                         self.failed_since,
                         self.max_down_time,
                         self.run_after,
@@ -683,6 +875,32 @@ check_frequency={})>'.format(
                             self.run_after,
                             self.check_frequency,
                             self.check_timeout)
+
+    class RawCheck(Base):
+        __tablename__ = 'raws'
+        id = Column(Integer, primary_key=True)
+        url = Column(String)
+        expression = Column(String)
+        current_hash = Column(String)
+        capture_groups = Column(String)
+        failed_since = Column(Integer)
+        max_down_time = Column(Integer)
+        run_after = Column(Integer)
+        check_frequency = Column(Integer)
+        check_timeout = Column(Integer)
+        def __repr__(self):
+            return '<url(url={}, expression={}, current_hash={},\
+capture_groups={}, failed_since={}, max_down_time={}, run_after={},\
+check_frequency={}, check_timeout{})>'.format(
+                        self.url,
+                        self.expression,
+                        self.current_hash,
+                        self.capture_groups,
+                        self.failed_since,
+                        self.max_down_time,
+                        self.run_after,
+                        self.check_frequency,
+                        self.check_timeout)
 
     MD5Check.__table__
     Table('md5s', metadata,
@@ -713,6 +931,19 @@ check_frequency={})>'.format(
             Column('id', Integer(), primary_key=True, nullable=False),
             Column('url', String(), unique=True),
             Column('current_content', String()),
+            Column('failed_since', Integer()),
+            Column('max_down_time', Integer()),
+            Column('run_after', Integer()),
+            Column('check_frequency', Integer()),
+            Column('check_timeout', Integer()),   schema=None)
+
+    RawCheck.__table__
+    Table('raws', metadata,
+            Column('id', Integer(), primary_key=True, nullable=False),
+            Column('url', String(), unique=True),
+            Column('expression', String()),
+            Column('current_hash', String()),
+            Column('capture_groups', String()),
             Column('failed_since', Integer()),
             Column('max_down_time', Integer()),
             Column('run_after', Integer()),
@@ -755,8 +986,16 @@ check_frequency={})>'.format(
 
             print(add_diff(args.add[1], args.max_down_time,
                     args.check_frequency, args.check_timeout))
+        elif:
+            args.add[0] == 'raw':
+            if len(args.add) != 3:
+                print('call as -a \'raw\' expression \'url-to-check\'')
+                exit(1)
+
+            print(add_string(args.add[2], args.add[1], args.max_down_time,
+                    args.check_frequency, args.check_timeout))
         else:
-            print('Choose either md5, string or diff.')
+            print('Choose either md5, string, diff or raw.')
 
     elif args.delete:
         if len(args.delete) != 2:
@@ -779,6 +1018,7 @@ Arguments:
   \t\t\t\t-a md5 [url]
   \t\t\t\t-a string [string] [url]
   \t\t\t\t-a diff [url]
+  \t\t\t\t-a raw [expression] [url]
   -d/--delete\t\tDelete a check:
   \t\t\t\t-d [check_type] [url]
   --max-down-time\t\tNumber of seconds a site can be down for before warning

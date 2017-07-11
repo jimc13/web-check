@@ -5,4 +5,4 @@ Designed to be run as a cron
 
 Testing and design was with python3 but it seems to be OK with python2
 
-Version 1.1
+Version 1.2
