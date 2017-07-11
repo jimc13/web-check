@@ -174,8 +174,7 @@ def run_checks():
         check.old_hash = check.current_hash
         session.commit()
         try:
-            m = re.search(expression.encode('unicode-escape'),
-                        url_content.text, re.S)
+            m = re.search(expression, url_content.text, re.S)
         except sre_constants.error as e:
             print('Error: invalid regular expression: {}'.format(e))
             continue
@@ -384,8 +383,7 @@ def add_raw(url, expression, max_down_time, check_frequency, check_timeout):
         return 'Error: Failed to hash response from {}'.format(url)
 
     try:
-        m = re.search(expression.encode('unicode-escape'),
-                    url_content.text, re.S)
+        m = re.search(expression, url_content.text, re.S)
     except sre_constants.error as e:
         return 'Error: invalid regular expression: {}'.format(e)
 
