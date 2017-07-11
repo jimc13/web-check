@@ -539,7 +539,7 @@ def get_longest_raw():
     longest_run_after = 9
     longest_check_frequency = 15
     longest_check_timeout = 13
-    for check in session.query(StringCheck).order_by(StringCheck.id):
+    for check in session.query(RawCheck).order_by(RawCheck.id):
         if len(str(check.url)) > longest_url:
             longest_url = len(str(check.url))
         if len(str(check.exprssion)) > longest_expression:
