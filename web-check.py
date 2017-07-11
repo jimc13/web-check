@@ -384,8 +384,9 @@ def add_raw(url, expression, max_down_time, check_frequency, check_timeout):
 
     try:
         m = re.search(expression, url_content.text, re.S)
-    except sre_constants.error as e:
-        return 'Error: invalid regular expression: {}'.format(e)
+    except:
+        # I couldn't catch the sre_constants.error I'm looking for so...
+        return 'Error: invalid regular expression'
 
     try:
         capture_groups = m.groups()
