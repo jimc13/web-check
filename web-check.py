@@ -183,7 +183,7 @@ def run_checks():
         try:
             capture_groups = m.groups()
         except AttributeError:
-            print('Error: no matches for regular exprssion on {}'.format(url))
+            print('Error: no matches for regular expression on {}'.format(url))
             continue
 
         try:
@@ -400,7 +400,7 @@ def add_raw(url, expression, max_down_time, check_frequency, check_timeout):
     try:
         capture_groups = m.groups()
     except AttributeError:
-        return 'Error: no matches for regular exprssion on {}'.format(url)
+        return 'Error: no matches for regular expression on {}'.format(url)
 
     for count, capture_group in enumerate(capture_groups):
         print('{} matched capture group {}, will alert if this changes'.format(
@@ -558,8 +558,8 @@ def get_longest_raw():
     for check in session.query(RawCheck).order_by(RawCheck.id):
         if len(str(check.url)) > longest_url:
             longest_url = len(str(check.url))
-        if len(str(check.exprssion)) > longest_expression:
-            longest_expression = len(str(check.exprssion))
+        if len(str(check.expression)) > longest_expression:
+            longest_expression = len(str(check.expression))
         if len(str(check.current_hash)) > longest_current_hash:
             longest_current_hash = len(str(check.current_hash))
         if len(str(check.capture_groups)) > longest_capture_groups:
