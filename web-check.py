@@ -175,7 +175,7 @@ def run_checks():
         check.old_hash = check.current_hash
         session.commit()
         try:
-            m = re.search(expression, url_content.text, re.S)
+            m = re.search(str(expression), url_content.text, re.S)
         except:
             # I couldn't catch the sre_constants.error I'm looking for so...
             print('Error: invalid regular expression')
