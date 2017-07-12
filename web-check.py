@@ -188,22 +188,22 @@ def run_checks():
             continue
 
         try:
-            old_capture_group = tuple(json.loads(check.capture_group))
+            old_capture_groups = tuple(json.loads(check.capture_groups))
         except:
             print('Error: could not retreive data for raw check of {}'.format(
                                                                     check.url))
             continue
 
-        if capture_group == old_capture_group:
+        if capture_groups == old_capture_groups:
             continue
 
         print('RawCheck with expression {} changed for {}').format(
                                                             check.expression,
                                                             check.url)
-        for count, capture_group in enumerate(capture_groups):
-            if capture_group != check.capture_groups[count]:
-                print('{} has been changed to {}'.format(capture_group,
-                                                check.capture_groups[count]))
+        for count, old_capture_group in enumerate(old_capture_groups):
+            if old_capture_group != capture_groups[count]:
+                print('{} has been changed to {}'.format(old_capture_group,
+                                                    capture_groups[count]))
 
         check.capture_groups = capture_groups
         session.commit()
