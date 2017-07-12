@@ -2,6 +2,7 @@
 try:
     import sys
     import re
+    import json
     import argparse
     import time
     import requests
@@ -10,7 +11,6 @@ try:
     import difflib
     import sqlalchemy
     from sqlalchemy import Column, Integer, String, Table, MetaData
-    from sqlalchemy.types import ARRAY as Array
     from sqlalchemy.ext.declarative import declarative_base
     from sqlalchemy.orm import sessionmaker
 except ImportError:
@@ -184,8 +184,16 @@ def run_checks():
             capture_groups = m.groups()
         except AttributeError:
             print('Error: no matches for regular exprssion on {}'.format(url))
+            continue
 
-        if capture_group == check.capture_group:
+        try:
+            old_capture_group = tuple(json.decodes(check.capture_group))
+        except:
+            print('Error: could not retreive data for raw check of {}'.format(
+                                                                    check.url)
+            continue
+
+        if capture_group == old_capture_group:
             continue
 
         print('RawCheck with expression {} changed for {}').format(
@@ -394,8 +402,15 @@ def add_raw(url, expression, max_down_time, check_frequency, check_timeout):
     except AttributeError:
         return 'Error: no matches for regular exprssion on {}'.format(url)
 
-    for capture_group in capture_groups:
-        print('{} matched, will alert if this changes'.format(capture_group))
+    for count, capture_group in enumerate(capture_groups):
+        print('{} matched capture group {}, will alert if this changes'.format(
+                                                                capture_group,
+                                                                count))
+
+    try:
+        capture_group = json.dumps(capture_group)
+    except:
+        return 'Error: could not convert {} to json'.format(capture_group)
 
     check = RawCheck(url=url,
                 expression=expression,
@@ -882,7 +897,7 @@ check_frequency={})>'.format(
         url = Column(String)
         expression = Column(String)
         current_hash = Column(String)
-        capture_groups = Column(Array)
+        capture_groups = Column(String)
         failed_since = Column(Integer)
         max_down_time = Column(Integer)
         run_after = Column(Integer)
@@ -943,7 +958,7 @@ check_frequency={}, check_timeout{})>'.format(
             Column('url', String(), unique=True),
             Column('expression', String()),
             Column('current_hash', String()),
-            Column('capture_groups', Array()),
+            Column('capture_groups', String()),
             Column('failed_since', Integer()),
             Column('max_down_time', Integer()),
             Column('run_after', Integer()),
