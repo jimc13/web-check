@@ -408,9 +408,9 @@ def add_raw(url, expression, max_down_time, check_frequency, check_timeout):
                                                                 count))
 
     try:
-        capture_group = json.dumps(capture_group)
+        capture_groups = json.dumps(capture_groups)
     except:
-        return 'Error: could not convert {} to json'.format(capture_group)
+        return 'Error: could not convert {} to json'.format(captures_group)
 
     check = RawCheck(url=url,
                 expression=expression,
