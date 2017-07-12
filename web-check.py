@@ -673,6 +673,8 @@ def delete_check(check_type, url):
         check = session.query(StringCheck).filter(StringCheck.url == url)
     elif check_type == 'diff':
         check = session.query(DiffCheck).filter(DiffCheck.url == url)
+    elif check_type == 'raw':
+        check = session.query(RawCheck).filter(RawCheck.url == url)
     else:
         return 'Chose either md5, string, diff or raw check'
 
