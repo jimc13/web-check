@@ -10,6 +10,7 @@ try:
     import difflib
     import sqlalchemy
     from sqlalchemy import Column, Integer, String, Table, MetaData
+    from sqlalchemy.types import ARRAY as Array
     from sqlalchemy.ext.declarative import declarative_base
     from sqlalchemy.orm import sessionmaker
 except ImportError:
@@ -881,7 +882,7 @@ check_frequency={})>'.format(
         url = Column(String)
         expression = Column(String)
         current_hash = Column(String)
-        capture_groups = Column(String)
+        capture_groups = Column(Array)
         failed_since = Column(Integer)
         max_down_time = Column(Integer)
         run_after = Column(Integer)
@@ -942,7 +943,7 @@ check_frequency={}, check_timeout{})>'.format(
             Column('url', String(), unique=True),
             Column('expression', String()),
             Column('current_hash', String()),
-            Column('capture_groups', String()),
+            Column('capture_groups', Array()),
             Column('failed_since', Integer()),
             Column('max_down_time', Integer()),
             Column('run_after', Integer()),
