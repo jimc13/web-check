@@ -448,10 +448,8 @@ def get_longest_md5():
             longest_old_hash = len(str(check.old_hash))
         if len(str(check.failed_since)) > longest_failed_since:
             longest_failed_since = len(str(check.failed_since))
-        if len(str(check.max_down_time)) > \
-                                longest_max_down_time:
-            longest_max_down_time =\
-                                    len(str(check.max_down_time))
+        if len(str(check.max_down_time)) > longest_max_down_time:
+            longest_max_down_time = len(str(check.max_down_time))
         if len(str(check.run_after)) > longest_run_after:
             longest_run_after = len(str(check.run_after))
         if len(str(check.check_frequency)) > longest_check_frequency:
@@ -486,10 +484,8 @@ def get_longest_string():
             longest_present = len(str(check.present))
         if len(str(check.failed_since)) > longest_failed_since:
             longest_failed_since = len(str(check.failed_since))
-        if len(str(check.max_down_time)) > \
-                                longest_max_down_time:
-            longest_max_down_time =\
-                                    len(str(check.max_down_time))
+        if len(str(check.max_down_time)) > longest_max_down_time:
+            longest_max_down_time = len(str(check.max_down_time))
         if len(str(check.run_after)) > longest_run_after:
             longest_run_after = len(str(check.run_after))
         if len(str(check.check_frequency)) > longest_check_frequency:
@@ -526,10 +522,8 @@ def get_longest_diff():
         #    longest_current_content = len(str(check.current_content))
         if len(str(check.failed_since)) > longest_failed_since:
             longest_failed_since = len(str(check.failed_since))
-        if len(str(check.max_down_time)) > \
-                                longest_max_down_time:
-            longest_max_down_time =\
-                                    len(str(check.max_down_time))
+        if len(str(check.max_down_time)) > longest_max_down_time:
+            longest_max_down_time = len(str(check.max_down_time))
         if len(str(check.run_after)) > longest_run_after:
             longest_run_after = len(str(check.run_after))
         if len(str(check.check_frequency)) > longest_check_frequency:
@@ -564,14 +558,10 @@ def get_longest_raw():
             longest_current_hash = len(str(check.current_hash))
         if len(str(check.capture_groups)) > longest_capture_groups:
             longest_capture_groups = len(str(check.capture_groups))
-        if len(str(check.present)) > longest_present:
-            longest_present = len(str(check.present))
         if len(str(check.failed_since)) > longest_failed_since:
             longest_failed_since = len(str(check.failed_since))
-        if len(str(check.max_down_time)) > \
-                                longest_max_down_time:
-            longest_max_down_time =\
-                                    len(str(check.max_down_time))
+        if len(str(check.max_down_time)) > longest_max_down_time:
+            longest_max_down_time = len(str(check.max_down_time))
         if len(str(check.run_after)) > longest_run_after:
             longest_run_after = len(str(check.run_after))
         if len(str(check.check_frequency)) > longest_check_frequency:
