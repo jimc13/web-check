@@ -176,8 +176,9 @@ def run_checks():
         session.commit()
         try:
             m = re.search(expression, url_content.text, re.S)
-        except sre_constants.error as e:
-            print('Error: invalid regular expression: {}'.format(e))
+        except:
+            # I couldn't catch the sre_constants.error I'm looking for so...
+            print('Error: invalid regular expression')
             continue
 
         try:
