@@ -190,7 +190,7 @@ def run_checks():
             old_capture_group = tuple(json.decodes(check.capture_group))
         except:
             print('Error: could not retreive data for raw check of {}'.format(
-                                                                    check.url)
+                                                                    check.url))
             continue
 
         if capture_group == old_capture_group:
