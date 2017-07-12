@@ -403,11 +403,6 @@ def add_raw(url, expression, max_down_time, check_frequency, check_timeout):
     except AttributeError:
         return 'Error: no matches for regular expression on {}'.format(url)
 
-    for count, capture_group in enumerate(capture_groups):
-        print('{} matched capture group {}, will alert if this changes'.format(
-                                                                capture_group,
-                                                                count))
-
     try:
         capture_groups = json.dumps(capture_groups)
     except:
@@ -429,6 +424,11 @@ def add_raw(url, expression, max_down_time, check_frequency, check_timeout):
         session.rollback()
         return 'Error: An entry for {} is already in database'.format(url)
     else:
+        for count, capture_group in enumerate(capture_groups):
+            print('{} matched capture group {}, will alert if this changes'.format(
+                                                                    capture_group,
+                                                                    count))
+
         return 'Added Raw Check for {}'.format(url)
 
 def get_longest_md5():

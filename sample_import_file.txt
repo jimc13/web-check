@@ -1,6 +1,8 @@
 # Format as	md5|url_to_check|warn_after|check_frequency|check_timeout
 # or		string|url_to_check|warn_after|check_frequency|check_timeout
 # or		diff|url_to_check|warn_after|check_frequency|check_timeout
+# or    raw|url_to_check|multiline regex to run against the html response with
+# capture groups to check|warn_after|check_frequency|check_timeout
 # you can drop the warn_after, check_frequency and check_timeout to use the
 # defaults
 # if you want to set one you must include all three due how the data is parsed
