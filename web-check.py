@@ -394,6 +394,22 @@ def add_raw(url, expression, max_down_time, check_frequency, check_timeout):
 
     try:
         m = re.search(expression, url_content.text, re.S)
+        # This regex is too expensive
+        #
+        # Maybe I can remove the multi line, it is making it harder to match
+        # the exact bit I am interested in
+        #
+        # Maybe the regex should be matched as many times as possible but
+        # encourage a simpler check
+        #
+        # I feel this currently is encouraging an expression like
+        # <static tags>Constant Title(\w*)<tags>.*<tags>Title tens of lines
+        # further down the page(.*?)<tags>
+        # which is a pain to write and runs for way too long
+        #
+        # Also when do people care about the html, there should probably at
+        # least be an option to have it stripped out all it's doing is making
+        # a mess of my regex or putting .* and .*? everywhere
     except:
         # I couldn't catch the sre_constants.error I'm looking for so...
         return 'Error: invalid regular expression'
