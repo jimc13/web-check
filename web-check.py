@@ -205,7 +205,7 @@ def run_checks():
                 print('{} has been changed to {}'.format(old_capture_group,
                                                     capture_groups[count]))
 
-        check.capture_groups = capture_groups
+        check.capture_groups = json.dumps(capture_groups)
         session.commit()
 
     return ''
@@ -394,6 +394,22 @@ def add_raw(url, expression, max_down_time, check_frequency, check_timeout):
 
     try:
         m = re.search(expression, url_content.text, re.S)
+        # This regex is too expensive
+        #
+        # Maybe I can remove the multi line, it is making it harder to match
+        # the exact bit I am interested in
+        #
+        # Maybe the regex should be matched as many times as possible but
+        # encourage a simpler check
+        #
+        # I feel this currently is encouraging an expression like
+        # <static tags>Constant Title(\w*)<tags>.*<tags>Title tens of lines
+        # further down the page(.*?)<tags>
+        # which is a pain to write and runs for way too long
+        #
+        # Also when do people care about the html, there should probably at
+        # least be an option to have it stripped out all it's doing is making
+        # a mess of my regex or putting .* and .*? everywhere
     except:
         # I couldn't catch the sre_constants.error I'm looking for so...
         return 'Error: invalid regular expression'
@@ -403,15 +419,11 @@ def add_raw(url, expression, max_down_time, check_frequency, check_timeout):
     except AttributeError:
         return 'Error: no matches for regular expression on {}'.format(url)
 
-    try:
-        capture_groups = json.dumps(capture_groups)
-    except:
-        return 'Error: could not convert {} to json'.format(captures_group)
-
+    json_capture_groups = json.dumps(capture_groups)
     check = RawCheck(url=url,
                 expression=expression,
                 current_hash=current_hash,
-                capture_groups=capture_groups,
+                capture_groups=json_capture_groups,
                 failed_since=0,
                 max_down_time=max_down_time,
                 run_after=0,
